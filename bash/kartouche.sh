@@ -1,18 +1,18 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 2
+# KARTOUCHE_TEMPLATE_VERSION: 3
 
 # kartouche:config begin
 KT_NAME=app_name
 KT_VERSION=0.1.0
 KT_DESCRIPTION=app_description
-KT_ACCENT=36
+KT_ACCENT='38;5;244'
 KT_APPEND_ONLY=false
 KT_GLYPHS=auto
 # kartouche:config end
 
-# kartouche:code begin v2
+# kartouche:code begin v3
 _kt_glyphs() {
     local set=unicode
     [[ $KT_GLYPHS == ascii || ( $KT_GLYPHS == auto && ( ${TERM:-} == linux || ${TERM:-} == dumb ) ) ]] && set=ascii
@@ -29,7 +29,7 @@ _kt_text() { printf '%s' "${1//$'\n'/ }"; }
 _kt_style() {
     local fd=$1 role=$2 value=$3 code
     if [[ -t $fd && -z ${NO_COLOR:-} && -n $value ]]; then
-        case $role in dim) code=2;; bold) code=1;; accent) code=$KT_ACCENT;; both) code="1;$KT_ACCENT";; red) code=31;; esac
+        case $role in dim) code=2;; bold) code=1;; accent) code=$KT_ACCENT;; both) code="1;$KT_ACCENT";; green) code=32;; red) code=31;; esac
         printf '\033[%sm%s\033[0m' "$code" "$value"
     else printf '%s' "$value"; fi
 }
@@ -71,7 +71,7 @@ kt_render_card() {
 kt_render_end() {
     local fd=$1 ok=$2 text; text=$(_kt_text "$3"); _kt_glyphs
     _kt_style "$fd" dim "${_kt_bl}${_kt_h}"; printf ' '
-    if [[ $ok == 1 ]]; then _kt_style "$fd" accent "$_kt_ok"; else _kt_style "$fd" red "$_kt_bad"; fi
+    if [[ $ok == 1 ]]; then _kt_style "$fd" green "$_kt_ok"; else _kt_style "$fd" red "$_kt_bad"; fi
     printf ' %s\n' "$text"
 }
 kt_render_frame() {
@@ -97,7 +97,7 @@ kt_render_frame() {
             done; printf '\n';;
         rail)
             for ((i=0;i<total;i++)); do
-                if (( i<n-1 || n>total )); then sym=$_kt_ok role=accent
+                if (( i<n-1 || n>total )); then sym=$_kt_ok role=green
                 elif (( i==n-1 )); then sym=$_kt_active role=accent
                 else sym=$_kt_open role=dim; fi
                 _kt_style "$fd" dim "${_kt_mid}${_kt_h}"; printf ' '; _kt_style "$fd" "$role" "$sym"; printf ' '

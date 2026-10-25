@@ -1,18 +1,18 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 1
+# KARTOUCHE_TEMPLATE_VERSION: 2
 
 # kartouche:config begin
 NAME = "app_name"
 VERSION = "0.1.0"
 DESCRIPTION = "app_description"
-ACCENT = "36"
+ACCENT = "38;5;244"
 APPEND_ONLY = False
 GLYPHS = "auto"
 # kartouche:config end
 
-# kartouche:code begin v1
+# kartouche:code begin v2
 import os
 import sys
 import time
@@ -33,7 +33,7 @@ def _text(value: str) -> str:
 def _paint(value: str, role: str, stream) -> str:
     if not value or not stream.isatty() or os.environ.get("NO_COLOR"):
         return value
-    code = {"dim": "2", "bold": "1", "accent": ACCENT, "boldaccent": "1;" + ACCENT, "red": "31"}[role]
+    code = {"dim": "2", "bold": "1", "accent": ACCENT, "boldaccent": "1;" + ACCENT, "green": "32", "red": "31"}[role]
     return f"\x1b[{code}m{value}\x1b[0m"
 
 
@@ -76,7 +76,7 @@ def render_card(name, version, description, stream) -> str:
 def render_end(ok, text, stream) -> str:
     g = _glyphs()
     return (_paint(g["╰"] + g["─"], "dim", stream) + " " +
-            _paint(g["✓" if ok else "✗"], "accent" if ok else "red", stream) + " " + _text(text))
+            _paint(g["✓" if ok else "✗"], "green" if ok else "red", stream) + " " + _text(text))
 
 
 def render_frame(style, n, total, label, labels, stream) -> str:
@@ -98,7 +98,7 @@ def render_frame(style, n, total, label, labels, stream) -> str:
         lines.append(prefix + (" " + _paint(g["›"], "dim", stream) + " ").join(parts))
     elif style == "rail":
         for i, x in enumerate(labels):
-            glyph, role = ("✓", "accent") if i < n-1 or done else (("◉", "accent") if i == n-1 else ("○", "dim"))
+            glyph, role = ("✓", "green") if i < n-1 or done else (("◉", "accent") if i == n-1 else ("○", "dim"))
             text = _paint(x, "bold", stream) if i == n-1 and not done else x
             lines.append(prefix + _paint(g[glyph], role, stream) + " " + text)
     elif style == "line":

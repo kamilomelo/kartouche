@@ -1,19 +1,19 @@
 // kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Kamilo Melo
-// KARTOUCHE_TEMPLATE_VERSION: 1
+// KARTOUCHE_TEMPLATE_VERSION: 2
 #![allow(dead_code)]
 
 // kartouche:config begin
 const NAME: &str = "app_name";
 const VERSION: &str = "0.1.0";
 const DESCRIPTION: &str = "app_description";
-const ACCENT: &str = "36";
+const ACCENT: &str = "38;5;244";
 const APPEND_ONLY: bool = false;
 const GLYPHS: &str = "auto";
 // kartouche:config end
 
-// kartouche:code begin v1
+// kartouche:code begin v2
 use std::io::{self, IsTerminal, Write};
 use std::time::Instant;
 
@@ -36,7 +36,7 @@ fn g(text: &str) -> String { text.chars().map(glyph).collect() }
 fn clean(text: &str) -> String { text.replace('\n', " ") }
 fn paint(text: &str, role: &str, stream: Stream) -> String {
     if text.is_empty() || !terminal(stream) || std::env::var("NO_COLOR").is_ok_and(|v| !v.is_empty()) { return text.into(); }
-    let code = match role { "dim" => "2", "bold" => "1", "accent" => ACCENT, "both" => return format!("\x1b[1;{ACCENT}m{text}\x1b[0m"), _ => "31" };
+    let code = match role { "dim" => "2", "bold" => "1", "accent" => ACCENT, "both" => return format!("\x1b[1;{ACCENT}m{text}\x1b[0m"), "green" => "32", _ => "31" };
     format!("\x1b[{code}m{text}\x1b[0m")
 }
 fn version(v: &str) -> String { let v = clean(v); if v.starts_with('v') { v } else { format!("v{v}") } }
@@ -67,7 +67,7 @@ pub fn render_card(name: &str, v: &str, description: &str, stream: Stream) -> St
     format!("{top}\n{body}\n{}", paint(&g(&format!("╰{}╯", "─".repeat(w))), "dim", stream))
 }
 pub fn render_end(ok: bool, text: &str, stream: Stream) -> String {
-    let (symbol, role) = if ok { ("✓", "accent") } else { ("✗", "red") };
+    let (symbol, role) = if ok { ("✓", "green") } else { ("✗", "red") };
     format!("{} {} {}", paint(&g("╰─"), "dim", stream), paint(&g(symbol), role, stream), clean(text))
 }
 pub fn render_frame(style: Style, n: usize, total: usize, label: &str, labels: &[&str], stream: Stream) -> String {
@@ -84,7 +84,7 @@ pub fn render_frame(style: Style, n: usize, total: usize, label: &str, labels: &
             lines.push(format!("{}{}", prefix('├', stream), parts.join(&format!(" {} ", paint(&g("›"), "dim", stream)))));
         }
         Style::Rail => for (i, x) in labels.iter().enumerate() {
-            let (symbol, role) = if i < n-1 || done { ("✓", "accent") } else if i == n-1 { ("◉", "accent") } else { ("○", "dim") };
+            let (symbol, role) = if i < n-1 || done { ("✓", "green") } else if i == n-1 { ("◉", "accent") } else { ("○", "dim") };
             let label = if i == n-1 && !done { paint(&clean(x), "bold", stream) } else { clean(x) };
             lines.push(format!("{}{} {label}", prefix('├', stream), paint(&g(symbol), role, stream)));
         },

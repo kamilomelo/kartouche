@@ -1,7 +1,7 @@
 // kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Kamilo Melo
-// KARTOUCHE_TEMPLATE_VERSION: 2
+// KARTOUCHE_TEMPLATE_VERSION: 3
 // Change package main to match your package when copying this file elsewhere.
 package main
 
@@ -19,13 +19,13 @@ import (
 const NAME = "app_name"
 const VERSION = "0.1.0"
 const DESCRIPTION = "app_description"
-const ACCENT = "36"
+const ACCENT = "38;5;244"
 const APPEND_ONLY = false
 const GLYPHS = "auto"
 
 // kartouche:config end
 
-// kartouche:code begin v2
+// kartouche:code begin v3
 type Style int
 
 const (
@@ -72,6 +72,8 @@ func paint(s, role string, f *os.File) string {
 		code = ACCENT
 	case "both":
 		code = "1;" + ACCENT
+	case "green":
+		code = "32"
 	}
 	return "\x1b[" + code + "m" + s + "\x1b[0m"
 }
@@ -117,7 +119,7 @@ func RenderCard(name, version, description string, f *os.File) string {
 func RenderEnd(ok bool, text string, f *os.File) string {
 	symbol, role := "✗", "red"
 	if ok {
-		symbol, role = "✓", "accent"
+		symbol, role = "✓", "green"
 	}
 	return paint(glyphs("╰─"), "dim", f) + " " + paint(glyphs(symbol), role, f) + " " + clean(text)
 }
@@ -145,7 +147,7 @@ func RenderFrame(style Style, n, total int, label string, labels []string, f *os
 		for i, x := range labels {
 			symbol, role := "○", "dim"
 			if i < n-1 || done {
-				symbol, role = "✓", "accent"
+				symbol, role = "✓", "green"
 			} else if i == n-1 {
 				symbol, role = "◉", "accent"
 			}

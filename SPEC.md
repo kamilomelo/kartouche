@@ -26,7 +26,7 @@ To use it: copy `kartouche.<ext>` into a script, edit the config block at the to
 
 - **Copy, then own.** No linking between repos, no install step, no version management.
 - **Update by agent.** Files are structured so an agent can replace the shared code and keep my edits (section 5.1).
-- **One accent color.** The design has exactly one real color; everything else follows the terminal theme (section 4.6).
+- **One configurable accent and green success.** The accent defaults to gray; `✓` is always green. Everything else follows the terminal theme except the red failure glyph (section 4.6).
 - **Safe in pipes and logs.** Never emit escape codes when output is not a terminal.
 
 ## 2. Non-goals
@@ -159,7 +159,7 @@ Steps replace the banner's description line. While steps run, the output is: the
 ╰─❯ 3/4 build
 ```
 
-**rail**: one line per step. `✓` (accent) done, `◉` (accent, bold label) current, `○` (dim) pending.
+**rail**: one line per step. `✓` (green) done, `◉` (accent, bold label) current, `○` (dim) pending.
 ```
 ╭─ ● app_name  v0.1.0
 ├─ ✓ connect
@@ -197,7 +197,7 @@ Replace the last line of the region:
 ╰─ ✗ failed at 3/4 build
 ```
 
-`✓` is accent. `✗` is red. Elapsed time is optional text supplied by the caller or computed by the template as seconds with one decimal (`4.2s`).
+`✓` is green. `✗` is red. Elapsed time is optional text supplied by the caller or computed by the template as seconds with one decimal (`4.2s`).
 
 ### 4.5 Spacing and text rules
 
@@ -211,16 +211,18 @@ Replace the last line of the region:
 |---|---|
 | frame glyphs, version, counter, pending items | dim `\e[2m` |
 | name | bold `\e[1m` |
-| accent: `●`, `✓`, `◉`, filled bar, `ok`, current crumb | the config constant `ACCENT` |
+| accent: `●`, `◉`, filled bar, `ok`, current crumb | the config constant `ACCENT` |
+| success: every `✓` (end line and completed rail steps) | green `\e[32m` |
 | failure: `✗` | red `\e[31m` |
 | every styled run ends with | reset `\e[0m` |
 
-- `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `36` (cyan, default), `95` (bright magenta), `38;5;141` (256-color purple), and so on. There is no name parser, no capability detection and no fallback logic.
+- `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `38;5;244` (gray, default), `36` (cyan), `38;5;141` (256-color purple), and so on. There is no name parser, no capability detection and no fallback logic. Success green is fixed, not configurable.
 - Approved accent suggestions to list in `README.md` and `DESIGN.md`:
 
 | Look | `ACCENT` |
 |---|---|
-| cyan (default) | `36` |
+| gray (default) | `38;5;244` |
+| cyan | `36` |
 | magenta | `35` |
 | yellow / amber | `33` |
 | green | `32` |
@@ -232,7 +234,7 @@ Replace the last line of the region:
 | coral | `38;5;203` |
 
 - Readability note for the docs: `30` (black) and `90` (gray) vanish on some themes, so avoid them as accents.
-- One accent per app is the intended use. The frame, glyphs and layout stay identical across apps.
+- One configurable accent per app is the intended use; success stays green and failure stays red. The frame, glyphs and layout stay identical across apps.
 
 ### 4.7 Console fallback and append-only mode (for installers)
 

@@ -58,7 +58,7 @@ Steps replace the banner's description line. While steps run, the output is: the
 ╰─❯ 3/4 build
 ```
 
-**rail**: one line per step. `✓` (accent) done, `◉` (accent, bold label) current, `○` (dim) pending.
+**rail**: one line per step. `✓` (green) done, `◉` (accent, bold label) current, `○` (dim) pending.
 ```
 ╭─ ● app_name  v0.1.0
 ├─ ✓ connect
@@ -96,7 +96,7 @@ Replace the last line of the region:
 ╰─ ✗ failed at 3/4 build
 ```
 
-`✓` is accent. `✗` is red. Elapsed time is optional text supplied by the caller or computed by the template as seconds with one decimal (`4.2s`).
+`✓` is green. `✗` is red. Elapsed time is optional text supplied by the caller or computed by the template as seconds with one decimal (`4.2s`).
 
 ### 4.5 Spacing and text rules
 
@@ -110,16 +110,18 @@ Replace the last line of the region:
 |---|---|
 | frame glyphs, version, counter, pending items | dim `\e[2m` |
 | name | bold `\e[1m` |
-| accent: `●`, `✓`, `◉`, filled bar, `ok`, current crumb | the config constant `ACCENT` |
+| accent: `●`, `◉`, filled bar, `ok`, current crumb | the config constant `ACCENT` |
+| success: every `✓` (end line and completed rail steps) | green `\e[32m` |
 | failure: `✗` | red `\e[31m` |
 | every styled run ends with | reset `\e[0m` |
 
-- `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `36` (cyan, default), `95` (bright magenta), `38;5;141` (256-color purple), and so on. There is no name parser, no capability detection and no fallback logic.
+- `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `38;5;244` (gray, default), `36` (cyan), `38;5;141` (256-color purple), and so on. There is no name parser, no capability detection and no fallback logic. Success green is fixed, not configurable.
 - Approved accent suggestions to list in `README.md` and `DESIGN.md`:
 
 | Look | `ACCENT` |
 |---|---|
-| cyan (default) | `36` |
+| gray (default) | `38;5;244` |
+| cyan | `36` |
 | magenta | `35` |
 | yellow / amber | `33` |
 | green | `32` |
@@ -131,7 +133,7 @@ Replace the last line of the region:
 | coral | `38;5;203` |
 
 - Readability note for the docs: `30` (black) and `90` (gray) vanish on some themes, so avoid them as accents.
-- One accent per app is the intended use. The frame, glyphs and layout stay identical across apps.
+- One configurable accent per app is the intended use; success stays green and failure stays red. The frame, glyphs and layout stay identical across apps.
 
 ### 4.7 Console fallback and append-only mode (for installers)
 
@@ -153,4 +155,3 @@ Some scripts run on the bare Linux console (for example an Arch install from the
 **Append-only steps.** The config constant `APPEND_ONLY` (default false) forces the non-redraw behavior of section 5.3 rule 4 even on a terminal: the title line is printed once, then one new line per step, never moving the cursor. Installers should set it to true.
 
 **Colors on the console.** The Linux console only approximates 256-color values, so scripts meant for it should use a plain accent (`30` to `37` or `90` to `97`; avoid `30` and `90`).
-

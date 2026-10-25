@@ -111,15 +111,16 @@ If you copy the Go file into another package, change its `package main` line to 
 
 ## Accent and console
 
-Edit `ACCENT` (or `KT_ACCENT` in Bash) to one raw SGR parameter string:
+Edit `ACCENT` (or `KT_ACCENT` in Bash) to one raw SGR parameter string. `✓` stays green (`32`) and `✗` stays red regardless of the accent:
 
 | Look | Accent | Look | Accent |
 |---|---|---|---|
-| cyan (default) | `36` | magenta | `35` |
-| yellow / amber | `33` | green | `32` |
-| blue | `34` | soft purple | `38;5;141` |
-| sky blue | `38;5;81` | warm orange | `38;5;214` |
-| mint | `38;5;78` | coral | `38;5;203` |
+| gray (default) | `38;5;244` | cyan | `36` |
+| magenta | `35` | yellow / amber | `33` |
+| green | `32` | blue | `34` |
+| soft purple | `38;5;141` | sky blue | `38;5;81` |
+| warm orange | `38;5;214` | mint | `38;5;78` |
+| coral | `38;5;203` | | |
 
 Avoid `30` (black) and `90` (gray): they disappear on some terminal themes. Color is disabled on a non-terminal stream or with `NO_COLOR=1`. `GLYPHS=auto` selects ASCII when `TERM=linux` or `TERM=dumb`; an installer inside tmux on the Linux console should set `GLYPHS=ascii` and `APPEND_ONLY=true`. The card assumes single-width characters; wide characters can misalign its right edge.
 
