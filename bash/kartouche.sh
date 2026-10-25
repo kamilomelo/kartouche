@@ -1,7 +1,7 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 1
+# KARTOUCHE_TEMPLATE_VERSION: 2
 
 # kartouche:config begin
 KT_NAME=app_name
@@ -12,7 +12,7 @@ KT_APPEND_ONLY=false
 KT_GLYPHS=auto
 # kartouche:config end
 
-# kartouche:code begin v1
+# kartouche:code begin v2
 _kt_glyphs() {
     local set=unicode
     [[ $KT_GLYPHS == ascii || ( $KT_GLYPHS == auto && ( ${TERM:-} == linux || ${TERM:-} == dumb ) ) ]] && set=ascii
@@ -84,7 +84,10 @@ kt_render_frame() {
     [[ $style == dots && $total -gt 12 ]] && style=line
     case $style in
         dots)
-            _kt_line "$fd" "$_kt_mid" "$(_kt_style "$fd" accent "$(_kt_repeat "$_kt_dot" "$((n>total ? total : n))")")$(_kt_style "$fd" dim "$(_kt_repeat "$_kt_open" "$((total-n>0 ? total-n : 0))")")  $(_kt_style "$fd" dim "$count")"; printf '\n';;
+            _kt_style "$fd" dim "${_kt_mid}${_kt_h}"; printf ' '
+            _kt_style "$fd" accent "$(_kt_repeat "$_kt_dot" "$((n>total ? total : n))")"
+            _kt_style "$fd" dim "$(_kt_repeat "$_kt_open" "$((total-n>0 ? total-n : 0))")"
+            printf '  '; _kt_style "$fd" dim "$count"; printf '\n';;
         crumbs)
             _kt_style "$fd" dim "${_kt_mid}${_kt_h}"; printf ' '
             for ((i=0;i<total;i++)); do
