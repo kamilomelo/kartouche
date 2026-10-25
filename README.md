@@ -129,3 +129,7 @@ Avoid `30` (black) and `90` (gray): they disappear on some terminal themes. Colo
 `./check.sh` compares all four demos byte-for-byte with both expected files. `./preview.sh [bash|rust|python|go]` shows the look and runs each live step style in your terminal. These scripts require Bash, rustc, Python 3 and Go; they are not run automatically.
 
 To update a script, tell your agent: **update the kartouche in this script from `<path or URL>`, following [UPDATING.md](UPDATING.md)**. The latest raw templates are at `https://raw.githubusercontent.com/kamilomelo/kartouche/main/<language>/kartouche.<ext>`.
+
+## License
+
+kartouche is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Kamilo Melo. You may copy and modify the templates; if you redistribute a copy, retain its copyright and SPDX header and include the MIT license text with your project.
