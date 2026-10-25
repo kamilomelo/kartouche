@@ -71,16 +71,6 @@ kt_steps_next
 kt_steps_done
 ```
 
-**Python** — copy `python/kartouche.py` next to your script:
-
-```python
-from kartouche import Steps, banner
-banner()
-with Steps("rail", ["connect", "fetch", "build"]) as steps:
-    steps.next()
-    steps.next()
-```
-
 **Rust** — copy `rust/kartouche.rs` next to `main.rs`:
 
 ```rust
@@ -92,6 +82,16 @@ fn main() {
     steps.next();
     steps.done(None);
 }
+```
+
+**Python** — copy `python/kartouche.py` next to your script:
+
+```python
+from kartouche import Steps, banner
+banner()
+with Steps("rail", ["connect", "fetch", "build"]) as steps:
+    steps.next()
+    steps.next()
 ```
 
 **Go** — copy `go/kartouche.go` next to `main.go`, then run `go run main.go kartouche.go`:
