@@ -1,0 +1,43 @@
+,- * app_name  v0.1.0
+`-> app_description
+
+,- lumen -----------  v0.3.1 -.
+|  tiny notes, zero friction  |
+`-----------------------------'
+
+-- inline
+,- * app_name  v0.1.0
+`-> 3/4 build
+
+-- dots
+,- * app_name  v0.1.0
+|- ***o  3/4
+`-> build
+
+-- crumbs
+,- * app_name  v0.1.0
+|- connect > fetch > build > deploy
+`-> 3/4 build
+
+-- rail
+,- * app_name  v0.1.0
+|- + connect
+|- + fetch
+|- @ build
+|- o deploy
+`-> 3/4
+
+-- line
+,- * app_name  v0.1.0
+|- ===============-----  3/4
+`-> build
+
+-- log
+,- * app_name  v0.1.0
+|- 1/4 connect ....... ok
+|- 2/4 fetch ......... ok
+`-> 3/4 build
+
+-- end
+`- + done in 4.2s
+`- x failed at 3/4 build
