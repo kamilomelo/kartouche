@@ -19,7 +19,7 @@ import (
 const NAME = "app_name"
 const VERSION = "0.1.0"
 const DESCRIPTION = "app_description"
-const ACCENT = "38;5;244"
+const ACCENT = "33"
 const APPEND_ONLY = false
 const GLYPHS = "auto"
 

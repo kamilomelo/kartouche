@@ -26,7 +26,7 @@ To use it: copy `kartouche.<ext>` into a script, edit the config block at the to
 
 - **Copy, then own.** No linking between repos, no install step, no version management.
 - **Update by agent.** Files are structured so an agent can replace the shared code and keep my edits (section 5.1).
-- **One configurable accent and green success.** The accent defaults to gray; `✓` is always green. Everything else follows the terminal theme except the red failure glyph (section 4.6).
+- **One configurable accent and green success.** The accent defaults to yellow; `✓` is always green. Everything else follows the terminal theme except the red failure glyph (section 4.6).
 - **Safe in pipes and logs.** Never emit escape codes when output is not a terminal.
 
 ## 2. Non-goals
@@ -216,15 +216,15 @@ Replace the last line of the region:
 | failure: `✗` | red `\e[31m` |
 | every styled run ends with | reset `\e[0m` |
 
-- `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `38;5;244` (gray, default), `36` (cyan), `38;5;141` (256-color purple), and so on. There is no name parser, no capability detection and no fallback logic. Success green is fixed, not configurable.
+- `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `33` (yellow, default), `38;5;244` (gray), `36` (cyan), and so on. There is no name parser, no capability detection and no fallback logic. Success green is fixed, not configurable.
 - Approved accent suggestions to list in `README.md` and `DESIGN.md`:
 
 | Look | `ACCENT` |
 |---|---|
-| gray (default) | `38;5;244` |
+| yellow / amber (default) | `33` |
+| gray | `38;5;244` |
 | cyan | `36` |
 | magenta | `35` |
-| yellow / amber | `33` |
 | green | `32` |
 | blue | `34` |
 | soft purple | `38;5;141` |

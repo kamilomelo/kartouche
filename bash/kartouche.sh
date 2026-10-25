@@ -7,7 +7,7 @@
 KT_NAME=app_name
 KT_VERSION=0.1.0
 KT_DESCRIPTION=app_description
-KT_ACCENT='38;5;244'
+KT_ACCENT=33
 KT_APPEND_ONLY=false
 KT_GLYPHS=auto
 # kartouche:config end

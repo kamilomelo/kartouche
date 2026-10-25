@@ -8,7 +8,7 @@
 const NAME: &str = "app_name";
 const VERSION: &str = "0.1.0";
 const DESCRIPTION: &str = "app_description";
-const ACCENT: &str = "38;5;244";
+const ACCENT: &str = "33";
 const APPEND_ONLY: bool = false;
 const GLYPHS: &str = "auto";
 // kartouche:config end

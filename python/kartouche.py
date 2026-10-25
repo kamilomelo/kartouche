@@ -7,7 +7,7 @@
 NAME = "app_name"
 VERSION = "0.1.0"
 DESCRIPTION = "app_description"
-ACCENT = "38;5;244"
+ACCENT = "33"
 APPEND_ONLY = False
 GLYPHS = "auto"
 # kartouche:config end

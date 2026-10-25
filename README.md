@@ -115,8 +115,8 @@ Edit `ACCENT` (or `KT_ACCENT` in Bash) to one raw SGR parameter string. `✓` st
 
 | Look | Accent | Look | Accent |
 |---|---|---|---|
-| gray (default) | `38;5;244` | cyan | `36` |
-| magenta | `35` | yellow / amber | `33` |
+| yellow / amber (default) | `33` | gray | `38;5;244` |
+| cyan | `36` | magenta | `35` |
 | green | `32` | blue | `34` |
 | soft purple | `38;5;141` | sky blue | `38;5;81` |
 | warm orange | `38;5;214` | mint | `38;5;78` |
