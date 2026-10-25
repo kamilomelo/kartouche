@@ -1,7 +1,7 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 2
+# KARTOUCHE_TEMPLATE_VERSION: 3
 
 # kartouche:config begin
 NAME = "app_name"
@@ -12,7 +12,7 @@ APPEND_ONLY = False
 GLYPHS = "auto"
 # kartouche:config end
 
-# kartouche:code begin v2
+# kartouche:code begin v3
 import os
 import sys
 import time
@@ -120,6 +120,37 @@ def render_frame(style, n, total, label, labels, stream) -> str:
     else:
         lines.append(tail + (label if style == "dots" or style == "line" else count + " " + label))
     return "\n".join(lines)
+
+
+def render_summary(style: str, name: str, version: str, items: list[tuple[str, str]], stream) -> str:
+    if style not in ("rail", "log") or any(state not in ("ok", "failed", "skipped") for _, state in items):
+        return ""
+    g = _glyphs()
+    counts = {state: sum(result == state for _, result in items) for state in ("ok", "failed", "skipped")}
+    longest = max((len(_text(label)) for label, _ in items), default=0)
+    lines = [render_title(name, version, stream)]
+    for i, (label, state) in enumerate(items, 1):
+        label = _text(label)
+        prefix = _paint(g["├"] + g["─"], "dim", stream) + " "
+        if style == "rail":
+            glyph, role = {"ok": ("✓", "green"), "failed": ("✗", "red"), "skipped": ("○", "dim")}[state]
+            lines.append(prefix + _paint(g[glyph], role, stream) + " " + label)
+        else:
+            role = {"ok": "accent", "failed": "red", "skipped": "dim"}[state]
+            dots = g["·"] * (longest - len(label) + 7)
+            lines.append(prefix + f"{i}/{len(items)} {label} {dots} " + _paint(state, role, stream))
+    glyph, role = (("✗", "red") if counts["failed"] else
+                   ("○", "dim") if counts["skipped"] or not items else ("✓", "green"))
+    end = f'{counts["ok"]} ok {g["·"]} {counts["failed"]} failed {g["·"]} {counts["skipped"]} skipped'
+    lines.append(_paint(g["╰"] + g["─"], "dim", stream) + " " + _paint(g[glyph], role, stream) + " " + end)
+    return "\n".join(lines)
+
+
+def summary(style: str, items: list[tuple[str, str]]) -> None:
+    text = render_summary(style, NAME, VERSION, items, sys.stderr)
+    if text:
+        try: print(text, file=sys.stderr)
+        except OSError: pass
 
 
 def banner(status: str | None = None) -> None:

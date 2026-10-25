@@ -26,7 +26,7 @@ To use it: copy `kartouche.<ext>` into a script, edit the config block at the to
 
 - **Copy, then own.** No linking between repos, no install step, no version management.
 - **Update by agent.** Files are structured so an agent can replace the shared code and keep my edits (section 5.1).
-- **One configurable accent and green success.** The accent defaults to yellow; `✓` is always green. Everything else follows the terminal theme except the red failure glyph (section 4.6).
+- **One configurable accent and green success.** The accent defaults to yellow; `✓` is always green. Everything else follows the terminal theme except red failures (section 4.6).
 - **Safe in pipes and logs.** Never emit escape codes when output is not a terminal.
 
 ## 2. Non-goals
@@ -209,11 +209,11 @@ Replace the last line of the region:
 
 | Role | Style |
 |---|---|
-| frame glyphs, version, counter, pending items | dim `\e[2m` |
+| frame glyphs, version, counter, pending or skipped items | dim `\e[2m` |
 | name | bold `\e[1m` |
 | accent: `●`, `◉`, filled bar, `ok`, current crumb | the config constant `ACCENT` |
 | success: every `✓` (end line and completed rail steps) | green `\e[32m` |
-| failure: `✗` | red `\e[31m` |
+| failure: `✗`, summary `failed` | red `\e[31m` |
 | every styled run ends with | reset `\e[0m` |
 
 - `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `33` (yellow, default), `38;5;244` (gray), `36` (cyan), and so on. There is no name parser, no capability detection and no fallback logic. Success green is fixed, not configurable.
@@ -256,6 +256,30 @@ Some scripts run on the bare Linux console (for example an Arch install from the
 **Append-only steps.** The config constant `APPEND_ONLY` (default false) forces the non-redraw behavior of section 5.3 rule 4 even on a terminal: the title line is printed once, then one new line per step, never moving the cursor. Installers should set it to true.
 
 **Colors on the console.** The Linux console only approximates 256-color values, so scripts meant for it should use a plain accent (`30` to `37` or `90` to `97`; avoid `30` and `90`).
+
+### 4.8 One-shot summaries
+
+Summaries report **completed commands** rather than tracking steps in progress. `rail` and `log` are the only summary styles. They receive ordered `(label, outcome)` entries, where the outcome is `ok`, `failed` or `skipped`. They always print once, without redraw, to stderr (or return a string for a caller-selected stream). They do not depend on `Steps`, `APPEND_ONLY`, or a clock. The title uses the configured name and version for the print function; render functions accept them explicitly. A summary has no description line.
+
+**rail summary** (one green `✓`, red `✗`, or dim `○` per entry):
+```
+╭─ ● app_name  v0.1.0
+├─ ✓ connect
+├─ ✗ fetch
+├─ ○ deploy
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+```
+
+**log summary** (all entries use the same label padding and `i/N` format as a finished log step; `ok` is accent, `failed` red, `skipped` dim):
+```
+╭─ ● app_name  v0.1.0
+├─ 1/3 connect ······· ok
+├─ 2/3 fetch ········· failed
+├─ 3/3 deploy ········ skipped
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+```
+
+The final line **always** reports all three counts, even when a count is zero. It uses `✗` (red) if any item failed; otherwise `○` (dim) if any was skipped or there are no items; otherwise `✓` (green). The separators `·` follow the glyph set, so they become `.` in ASCII mode. Empty summaries show just the title and `╰─ ○ 0 ok · 0 failed · 0 skipped`. Text follows section 4.5. No new config field is needed; callers own the results and hand them to the summary once. Invalid summary styles or outcomes print nothing.
 
 ---
 
@@ -301,7 +325,8 @@ Same names and behavior everywhere, in each language's casing.
 | `render_title` | the title line only: `╭─ ● name  vX` |
 | `render_frame` | the steps region for step `n` of `N` (4.3, including the all-done frame `n = N + 1`) |
 | `render_end` | the end line: `╰─ ✓ text` when ok, `╰─ ✗ text` when not (4.4); the caller supplies the whole text, such as `done in 4.2s` |
-| `banner` / `card` | render with the config values, then print |
+| `render_summary` | a complete, one-shot `rail` or `log` summary, title and final count line included (4.8) |
+| `banner` / `card` / `summary` | render with the config values, then print |
 | `Steps` | the lifecycle of section 5.5 |
 
 **Bash** (`FD` is `1` or `2`; color is decided with `[[ -t FD ]]`; `STYLE` is one of `inline dots crumbs rail line log`)
@@ -311,9 +336,11 @@ kt_render_card   FD NAME VERSION DESCRIPTION
 kt_render_title  FD NAME VERSION
 kt_render_frame  FD STYLE N TOTAL LABEL LABELS...
 kt_render_end    FD OK TEXT              # OK is 1 (✓) or 0 (✗)
+kt_render_summary FD STYLE NAME VERSION LABEL OUTCOME [LABEL OUTCOME]...
 
 kt_banner [STATUS]
 kt_card
+kt_summary STYLE LABEL OUTCOME [LABEL OUTCOME]...
 kt_steps_start STYLE LABELS...
 kt_steps_next
 kt_steps_done [ELAPSED_TEXT]
@@ -324,15 +351,18 @@ kt_steps_fail [REASON]
 ```rust
 pub enum Stream { Stdout, Stderr }
 pub enum Style { Inline, Dots, Crumbs, Rail, Line, Log }
+pub enum Outcome { Ok, Failed, Skipped }
 
 pub fn render_banner(name: &str, version: &str, description: &str, status: Option<&str>, stream: Stream) -> String
 pub fn render_card(name: &str, version: &str, description: &str, stream: Stream) -> String
 pub fn render_title(name: &str, version: &str, stream: Stream) -> String
 pub fn render_frame(style: Style, n: usize, total: usize, label: &str, labels: &[&str], stream: Stream) -> String
 pub fn render_end(ok: bool, text: &str, stream: Stream) -> String
+pub fn render_summary(style: Style, name: &str, version: &str, items: &[(&str, Outcome)], stream: Stream) -> String
 
 pub fn banner(status: Option<&str>)
 pub fn card()
+pub fn summary(style: Style, items: &[(&str, Outcome)])
 impl Steps {
     pub fn start(style: Style, labels: &[&str]) -> Steps
     pub fn next(&mut self)
@@ -348,9 +378,11 @@ def render_card(name, version, description, stream) -> str
 def render_title(name, version, stream) -> str
 def render_frame(style, n, total, label, labels, stream) -> str
 def render_end(ok, text, stream) -> str
+def render_summary(style: str, name: str, version: str, items: list[tuple[str, str]], stream) -> str
 
 def banner(status: str | None = None) -> None
 def card() -> None
+def summary(style: str, items: list[tuple[str, str]]) -> None
 class Steps:
     def __init__(self, style: str, labels: list[str]) -> None   # starts immediately
     def next(self) -> None
@@ -361,15 +393,19 @@ class Steps:
 **Go** (`f` is `os.Stdout` or `os.Stderr`)
 ```go
 type Style int // Inline, Dots, Crumbs, Rail, Line, Log
+type Outcome int // OkOutcome, FailedOutcome, SkippedOutcome
+type SummaryItem struct { Label string; Outcome Outcome }
 
 func RenderBanner(name, version, description, status string, f *os.File) string
 func RenderCard(name, version, description string, f *os.File) string
 func RenderTitle(name, version string, f *os.File) string
 func RenderFrame(style Style, n, total int, label string, labels []string, f *os.File) string
 func RenderEnd(ok bool, text string, f *os.File) string
+func RenderSummary(style Style, name, version string, items []SummaryItem, f *os.File) string
 
 func Banner(status string)                           // "" means no status line
 func Card()
+func Summary(style Style, items []SummaryItem)
 func NewSteps(style Style, labels ...string) *Steps  // starts immediately
 func (s *Steps) Next()
 func (s *Steps) Done(elapsed string)                 // "" means measured seconds
@@ -380,6 +416,7 @@ func (s *Steps) Close()
 Rules shared by all languages:
 
 - Style names: `inline dots crumbs rail line log`.
+- Summaries use only `rail` or `log`, and print once even when stderr is a terminal. Render functions return an empty string for invalid summary styles or outcomes; print functions write nothing in that case. Bash summary functions return 0 without output for invalid arguments (including an unpaired label/outcome).
 - Python: `Steps` also works as a context manager (`with Steps(...) as s:`); leaving normally calls `done()`, leaving with an exception calls `fail()` and re-raises.
 - Rust: `Drop` on `Steps`, and Go: `Close()`, finish an unfinished run with `╰─ ✗ interrupted at n/N label`. Neither runs on a default `SIGINT`, and the templates install **no signal handlers** (5.5).
 - Functions must never abort the host program: in Bash they return 0 even under `set -e` and `set -u`; in Rust, Python and Go they ignore write errors.
@@ -444,6 +481,7 @@ It prints, with `NO_COLOR=1 TERM=xterm-256color`, exactly `expected/demo.txt`, a
 2. A blank line, then `render_card("lumen", "0.3.1", "tiny notes, zero friction")`.
 3. For each style in the order `inline dots crumbs rail line log`: a blank line, `-- <style>`, `render_title("app_name", "0.1.0")`, then `render_frame(style, 3, 4, "build", ["connect","fetch","build","deploy"])`.
 4. A blank line, `-- end`, `render_end(true, "done in 4.2s")`, `render_end(false, "failed at 3/4 build")`.
+5. For `rail` then `log`: a blank line, `-- summary <style>`, then `render_summary(style, "app_name", "0.1.0", [("connect", ok), ("fetch", failed), ("deploy", skipped)])`.
 
 (Match the blank lines exactly to section 7.2.) The demos never read the config region for name, version or description.
 
@@ -506,6 +544,20 @@ Go note: `go run a.go b.go` requires all files to be in one directory, so the de
 -- end
 ╰─ ✓ done in 4.2s
 ╰─ ✗ failed at 3/4 build
+
+-- summary rail
+╭─ ● app_name  v0.1.0
+├─ ✓ connect
+├─ ✗ fetch
+├─ ○ deploy
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+
+-- summary log
+╭─ ● app_name  v0.1.0
+├─ 1/3 connect ······· ok
+├─ 2/3 fetch ········· failed
+├─ 3/3 deploy ········ skipped
+╰─ ✗ 1 ok · 1 failed · 1 skipped
 ````
 
 (A blank line separates blocks. The file ends with a single newline.)
@@ -558,6 +610,20 @@ The same output with the ASCII glyphs of section 4.7:
 -- end
 `- + done in 4.2s
 `- x failed at 3/4 build
+
+-- summary rail
+,- * app_name  v0.1.0
+|- + connect
+|- x fetch
+|- o deploy
+`- x 1 ok . 1 failed . 1 skipped
+
+-- summary log
+,- * app_name  v0.1.0
+|- 1/3 connect ....... ok
+|- 2/3 fetch ......... failed
+|- 3/3 deploy ........ skipped
+`- x 1 ok . 1 failed . 1 skipped
 ````
 
 ### 7.3 Scripts
@@ -633,7 +699,7 @@ Use `script -qec '<command>' /dev/null` (util-linux, on Arch by default) or Pyth
 
 **Phase 5: docs and updater**
 - [ ] `UPDATING.md` as in section 6.
-- [ ] `README.md`: text-block screenshots of banner, card and all step styles, four quickstarts of under 10 lines each, the accent table, a one-line note that the card assumes single-width characters, and the "how to update a script" recipe.
+- [ ] `README.md`: text-block screenshots of banner, card, all step styles and both summary styles, four quickstarts of under 10 lines each, summary usage examples, the accent table, a one-line note that the card assumes single-width characters, and the "how to update a script" recipe.
 - [ ] `check.sh` and `preview.sh` working (7.3).
 
 **Done means:** `check.sh` prints four `ok` lines (each covering both the Unicode and the `TERM=linux` run), every checkbox of phases 1 to 5 is ticked (the manual follow-up in phase 4 is excluded), and the final report lists the manual follow-ups as not performed. The line-count targets of section 0 are not part of this definition.

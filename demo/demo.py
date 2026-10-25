@@ -13,3 +13,7 @@ for style in ("inline", "dots", "crumbs", "rail", "line", "log"):
 print("\n-- end")
 print(k.render_end(True, "done in 4.2s", out))
 print(k.render_end(False, "failed at 3/4 build", out))
+items = [("connect", "ok"), ("fetch", "failed"), ("deploy", "skipped")]
+for style in ("rail", "log"):
+    print(f"\n-- summary {style}")
+    print(k.render_summary(style, "app_name", "0.1.0", items, out))

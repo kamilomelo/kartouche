@@ -1,7 +1,7 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 4
+# KARTOUCHE_TEMPLATE_VERSION: 5
 
 # kartouche:config begin
 KT_NAME=app_name
@@ -12,7 +12,7 @@ KT_APPEND_ONLY=false
 KT_GLYPHS=auto
 # kartouche:config end
 
-# kartouche:code begin v4
+# kartouche:code begin v5
 _kt_glyphs() {
     local set=unicode
     [[ $KT_GLYPHS == ascii || ( $KT_GLYPHS == auto && ( ${TERM:-} == linux || ${TERM:-} == dumb ) ) ]] && set=ascii
@@ -133,8 +133,52 @@ kt_render_frame() {
     return 0
 }
 
+kt_render_summary() {
+    (( $# >= 4 )) || return 0
+    local fd=$1 style=$2 name=$3 version=$4; shift 4
+    [[ $style == rail || $style == log ]] && (( $# % 2 == 0 )) || return 0
+    local -a items=("$@")
+    local total=$(( ${#items[@]} / 2 )) i label state longest=0 ok=0 failed=0 skipped=0 dots glyph role
+    for ((i=0;i<total;i++)); do
+        case ${items[2*i+1]} in
+            ok) (( ok+=1 )) || :;;
+            failed) (( failed+=1 )) || :;;
+            skipped) (( skipped+=1 )) || :;;
+            *) return 0;;
+        esac
+        label=$(_kt_text "${items[2*i]}")
+        (( ${#label}>longest )) && longest=${#label}
+    done
+    kt_render_title "$fd" "$name" "$version"
+    _kt_glyphs
+    for ((i=0;i<total;i++)); do
+        label=$(_kt_text "${items[2*i]}"); state=${items[2*i+1]}
+        _kt_style "$fd" dim "${_kt_mid}${_kt_h}"; printf ' '
+        if [[ $style == rail ]]; then
+            case $state in
+                ok) glyph=$_kt_ok role=green;;
+                failed) glyph=$_kt_bad role=red;;
+                skipped) glyph=$_kt_open role=dim;;
+            esac
+            _kt_style "$fd" "$role" "$glyph"; printf ' %s\n' "$label"
+        else
+            dots=$(_kt_repeat "$_kt_small" "$((longest-${#label}+7))")
+            printf '%d/%d %s %s ' "$((i+1))" "$total" "$label" "$dots"
+            case $state in ok) role=accent;; failed) role=red;; skipped) role=dim;; esac
+            _kt_style "$fd" "$role" "$state"; printf '\n'
+        fi
+    done
+    if (( failed )); then glyph=$_kt_bad role=red
+    elif (( skipped || total==0 )); then glyph=$_kt_open role=dim
+    else glyph=$_kt_ok role=green; fi
+    _kt_style "$fd" dim "${_kt_bl}${_kt_h}"; printf ' '; _kt_style "$fd" "$role" "$glyph"
+    printf ' %d ok %s %d failed %s %d skipped\n' "$ok" "$_kt_small" "$failed" "$_kt_small" "$skipped"
+    return 0
+}
+
 kt_banner() { kt_render_banner 2 "$KT_NAME" "$KT_VERSION" "$KT_DESCRIPTION" "${1:-}" >&2 || :; }
 kt_card() { kt_render_card 2 "$KT_NAME" "$KT_VERSION" "$KT_DESCRIPTION" >&2 || :; }
+kt_summary() { local style=${1:-}; (( $# )) && shift || :; kt_render_summary 2 "$style" "$KT_NAME" "$KT_VERSION" "$@" >&2 || :; }
 _kt_print_region() {
     local text=$1 line
     local -a lines=()

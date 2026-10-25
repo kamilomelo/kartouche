@@ -1,6 +1,6 @@
 # kartouche
 
-Copy-paste terminal banners, cards and step counters for Bash, Rust, Python and Go: one look for all my CLI scripts.
+Copy-paste terminal banners, cards, step counters and command summaries for Bash, Rust, Python and Go: one look for all my CLI scripts.
 
 https://github.com/kamilomelo/kartouche
 
@@ -109,6 +109,50 @@ func main() {
 
 If you copy the Go file into another package, change its `package main` line to match. `Steps` in Go is not concurrency-safe.
 
+## Summaries
+
+When several commands have already run, print a **rail** or **log** summary with one `ok`, `failed` or `skipped` outcome per label. This is separate from `Steps`: it prints once to stderr without animation, including when output is piped. The summary's last line always counts all three outcomes.
+
+```text
+rail
+╭─ ● app_name  v0.1.0
+├─ ✓ connect
+├─ ✗ fetch
+├─ ○ deploy
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+
+log
+╭─ ● app_name  v0.1.0
+├─ 1/3 connect ······· ok
+├─ 2/3 fetch ········· failed
+├─ 3/3 deploy ········ skipped
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+```
+
+Pass finished results to the print function (shown with `rail`; use `log` for the other layout). These are calls within your script, after loading the template (inside `main` in Rust and Go):
+
+```bash
+kt_summary rail connect ok fetch failed deploy skipped
+```
+
+```rust
+kartouche::summary(kartouche::Style::Rail, &[
+    ("connect", kartouche::Outcome::Ok), ("fetch", kartouche::Outcome::Failed),
+    ("deploy", kartouche::Outcome::Skipped),
+]);
+```
+
+```python
+from kartouche import summary
+summary("rail", [("connect", "ok"), ("fetch", "failed"), ("deploy", "skipped")])
+```
+
+```go
+Summary(Rail, []SummaryItem{{"connect", OkOutcome}, {"fetch", FailedOutcome}, {"deploy", SkippedOutcome}})
+```
+
+To build output for stdout instead, use `kt_render_summary`, `render_summary`, or `RenderSummary` in the matching language and supply stdout as the destination. Only `rail` and `log` are summary styles; the existing progress styles are unchanged.
+
 ## Accent and console
 
 Edit `ACCENT` (or `KT_ACCENT` in Bash) to one raw SGR parameter string. `✓` stays green (`32`) and `✗` stays red regardless of the accent:
@@ -126,7 +170,7 @@ Avoid `30` (black) and `90` (gray): they disappear on some terminal themes. Colo
 
 ## Preview and checks
 
-`./check.sh` compares all four demos byte-for-byte with both expected files. `./preview.sh [bash|rust|python|go]` shows the look and runs each live step style in your terminal. These scripts require Bash, rustc, Python 3 and Go; they are not run automatically.
+`./check.sh` compares all four demos (including both summary styles) byte-for-byte with both expected files. `./preview.sh [bash|rust|python|go]` shows the look and runs each live step style in your terminal. These scripts require Bash, rustc, Python 3 and Go; they are not run automatically.
 
 To update a script, tell your agent: **update the kartouche in this script from `<path or URL>`, following [UPDATING.md](UPDATING.md)**. The latest raw templates are at `https://raw.githubusercontent.com/kamilomelo/kartouche/main/<language>/kartouche.<ext>`.
 

@@ -1,7 +1,7 @@
 // kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Kamilo Melo
-// KARTOUCHE_TEMPLATE_VERSION: 3
+// KARTOUCHE_TEMPLATE_VERSION: 4
 // Change package main to match your package when copying this file elsewhere.
 package main
 
@@ -25,7 +25,7 @@ const GLYPHS = "auto"
 
 // kartouche:config end
 
-// kartouche:code begin v3
+// kartouche:code begin v4
 type Style int
 
 const (
@@ -187,6 +187,75 @@ func RenderFrame(style Style, n, total int, label string, labels []string, f *os
 	}
 	return strings.Join(append(lines, tail(f)+last), "\n")
 }
+
+type Outcome int
+
+const (
+	_ Outcome = iota // An omitted outcome is invalid, not a successful command.
+	OkOutcome
+	FailedOutcome
+	SkippedOutcome
+)
+
+type SummaryItem struct {
+	Label   string
+	Outcome Outcome
+}
+
+func RenderSummary(style Style, name, version string, items []SummaryItem, f *os.File) string {
+	if style != Rail && style != Log {
+		return ""
+	}
+	for _, item := range items {
+		if item.Outcome < OkOutcome || item.Outcome > SkippedOutcome {
+			return ""
+		}
+	}
+	ok, failed, skipped, longest := 0, 0, 0, 0
+	for _, item := range items {
+		longest = max(longest, utf8.RuneCountInString(clean(item.Label)))
+	}
+	lines := []string{RenderTitle(name, version, f)}
+	for i, item := range items {
+		label := clean(item.Label)
+		symbol, role, state := "✓", "green", "ok"
+		switch item.Outcome {
+		case OkOutcome:
+			ok++
+		case FailedOutcome:
+			failed++
+			symbol, role, state = "✗", "red", "failed"
+		case SkippedOutcome:
+			skipped++
+			symbol, role, state = "○", "dim", "skipped"
+		}
+		if style == Rail {
+			lines = append(lines, prefix(f)+paint(glyphs(symbol), role, f)+" "+label)
+		} else {
+			if item.Outcome == OkOutcome {
+				role = "accent"
+			}
+			dots := glyphs(strings.Repeat("·", longest-utf8.RuneCountInString(label)+7))
+			lines = append(lines, fmt.Sprintf("%s%d/%d %s %s %s", prefix(f), i+1, len(items), label, dots, paint(state, role, f)))
+		}
+	}
+	symbol, role := "✓", "green"
+	if failed > 0 {
+		symbol, role = "✗", "red"
+	} else if skipped > 0 || len(items) == 0 {
+		symbol, role = "○", "dim"
+	}
+	ending := fmt.Sprintf("%d ok %s %d failed %s %d skipped", ok, glyphs("·"), failed, glyphs("·"), skipped)
+	lines = append(lines, paint(glyphs("╰─"), "dim", f)+" "+paint(glyphs(symbol), role, f)+" "+ending)
+	return strings.Join(lines, "\n")
+}
+
+func Summary(style Style, items []SummaryItem) {
+	if text := RenderSummary(style, NAME, VERSION, items, os.Stderr); text != "" {
+		_, _ = fmt.Fprintln(os.Stderr, text)
+	}
+}
+
 func Banner(status string) {
 	_, _ = fmt.Fprintln(os.Stderr, RenderBanner(NAME, VERSION, DESCRIPTION, status, os.Stderr))
 }

@@ -1,5 +1,5 @@
 #[path = "../rust/kartouche.rs"] mod kartouche;
-use kartouche::{Style, Stream};
+use kartouche::{Outcome, Style, Stream};
 
 fn main() {
     use kartouche as k;
@@ -16,4 +16,9 @@ fn main() {
     println!("\n-- end");
     println!("{}", k::render_end(true, "done in 4.2s", out));
     println!("{}", k::render_end(false, "failed at 3/4 build", out));
+    let items = [("connect", Outcome::Ok), ("fetch", Outcome::Failed), ("deploy", Outcome::Skipped)];
+    for (name, style) in [("rail", Style::Rail), ("log", Style::Log)] {
+        println!("\n-- summary {name}");
+        println!("{}", k::render_summary(style, "app_name", "0.1.0", &items, out));
+    }
 }

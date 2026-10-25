@@ -11,3 +11,7 @@ done
 printf '\n-- end\n'
 kt_render_end 1 1 'done in 4.2s'
 kt_render_end 1 0 'failed at 3/4 build'
+printf '\n-- summary rail\n'
+kt_render_summary 1 rail app_name 0.1.0 connect ok fetch failed deploy skipped
+printf '\n-- summary log\n'
+kt_render_summary 1 log app_name 0.1.0 connect ok fetch failed deploy skipped

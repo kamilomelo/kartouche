@@ -108,11 +108,11 @@ Replace the last line of the region:
 
 | Role | Style |
 |---|---|
-| frame glyphs, version, counter, pending items | dim `\e[2m` |
+| frame glyphs, version, counter, pending or skipped items | dim `\e[2m` |
 | name | bold `\e[1m` |
 | accent: `●`, `◉`, filled bar, `ok`, current crumb | the config constant `ACCENT` |
 | success: every `✓` (end line and completed rail steps) | green `\e[32m` |
-| failure: `✗` | red `\e[31m` |
+| failure: `✗`, summary `failed` | red `\e[31m` |
 | every styled run ends with | reset `\e[0m` |
 
 - `ACCENT` is a raw SGR parameter string chosen by hand when the template is copied: `33` (yellow, default), `38;5;244` (gray), `36` (cyan), and so on. There is no name parser, no capability detection and no fallback logic. Success green is fixed, not configurable.
@@ -155,3 +155,27 @@ Some scripts run on the bare Linux console (for example an Arch install from the
 **Append-only steps.** The config constant `APPEND_ONLY` (default false) forces the non-redraw behavior of section 5.3 rule 4 even on a terminal: the title line is printed once, then one new line per step, never moving the cursor. Installers should set it to true.
 
 **Colors on the console.** The Linux console only approximates 256-color values, so scripts meant for it should use a plain accent (`30` to `37` or `90` to `97`; avoid `30` and `90`).
+
+### 4.8 One-shot summaries
+
+Summaries report **completed commands** rather than tracking steps in progress. `rail` and `log` are the only summary styles. They receive ordered `(label, outcome)` entries, where the outcome is `ok`, `failed` or `skipped`. They always print once, without redraw, to stderr (or return a string for a caller-selected stream). They do not depend on `Steps`, `APPEND_ONLY`, or a clock. The title uses the configured name and version for the print function; render functions accept them explicitly. A summary has no description line.
+
+**rail summary** (one green `✓`, red `✗`, or dim `○` per entry):
+```
+╭─ ● app_name  v0.1.0
+├─ ✓ connect
+├─ ✗ fetch
+├─ ○ deploy
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+```
+
+**log summary** (all entries use the same label padding and `i/N` format as a finished log step; `ok` is accent, `failed` red, `skipped` dim):
+```
+╭─ ● app_name  v0.1.0
+├─ 1/3 connect ······· ok
+├─ 2/3 fetch ········· failed
+├─ 3/3 deploy ········ skipped
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+```
+
+The final line **always** reports all three counts, even when a count is zero. It uses `✗` (red) if any item failed; otherwise `○` (dim) if any was skipped or there are no items; otherwise `✓` (green). The separators `·` follow the glyph set, so they become `.` in ASCII mode. Empty summaries show just the title and `╰─ ○ 0 ok · 0 failed · 0 skipped`. Text follows section 4.5. No new config field is needed; callers own the results and hand them to the summary once. Invalid summary styles or outcomes print nothing.
