@@ -280,6 +280,7 @@ NAME, VERSION, DESCRIPTION, ACCENT, APPEND_ONLY, GLYPHS   (and nothing else)
   - `kartouche:code begin v1` / `kartouche:code end`
 - The number after `v` in the code marker is the template revision. Bump it whenever the code region changes. The header repeats it as `KARTOUCHE_TEMPLATE_VERSION`; an updater must keep these two values in sync (section 6).
 - Config values are plain constants. The code region only reads them.
+- **Go syntax exception:** `package main` and a standard-library `import (...)` block go between the header comment and the config region; Go requires imports before constant declarations. The imports are not part of the editable config. An updater must reconcile that import block when a new Go code revision adds or removes imports (section 6).
 - An updater can therefore replace everything between the code markers, update only the header's `KARTOUCHE_TEMPLATE_VERSION` value to match, and leave the config region and the rest of the host script untouched.
 
 ### 5.2 Functions per language
@@ -422,6 +423,7 @@ State: `labels` (the plan; `N` is its length), `n` (current step, 1-based), a `f
 4. **Replace** the text between `kartouche:code begin` and `kartouche:code end` (markers included) with the same region from the new template. Also update **only** the header's `KARTOUCHE_TEMPLATE_VERSION` value to match the new code marker; never leave them out of sync.
 5. **Leave untouched:** the config region (`kartouche:config`), everything else outside the code region (except that one header version value), and the host script's own calls.
 6. **Check what changed:** if the new revision renamed or removed a function the host script calls, list the affected call sites and fix them. If config fields were added to the new template, add them to the host script's config region with the template's default values and tell me.
+   For Go, compare the new template's import block with the copy's import block and add or remove imports required by the new code; preserve any imports used elsewhere by the host script. This is the sole exception to step 5 apart from the header version.
 7. **Verify:** run the host script's own test or at least a dry run, and show me the diff.
 
 `README.md` repeats this as a one-paragraph recipe: *"To update a script, tell your agent: update the kartouche in this script from `<path or URL>`, following `UPDATING.md`."*
