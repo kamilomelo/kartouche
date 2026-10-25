@@ -17,6 +17,11 @@ demo() {
     esac
 }
 
+check_bad_bash_count() {
+    bash -c 'source bash/kartouche.sh; kt_render_frame 1 line "$1" "$2" build connect fetch build deploy' _ "$1" "$2" > "$tmp/bad-output" 2> "$tmp/bad-error" &&
+        [[ ! -s $tmp/bad-output && ! -s $tmp/bad-error ]]
+}
+
 failed=0
 for lang in bash rust python go; do
     ok=true
@@ -29,6 +34,12 @@ for lang in bash rust python go; do
             ok=false
         fi
     done
+    if [[ $lang == bash ]]; then
+        probe='arr[$(printf INJECTION >&2; echo 0)]'
+        if ! check_bad_bash_count "$probe" 4 || ! check_bad_bash_count 1 "$probe" || ! check_bad_bash_count 1 0; then
+            ok=false
+        fi
+    fi
     if [[ $ok == true ]]; then printf '%s ok\n' "$lang"
     else printf '%s FAIL\n' "$lang"; failed=1; fi
 done

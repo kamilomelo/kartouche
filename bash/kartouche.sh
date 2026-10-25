@@ -1,7 +1,7 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 3
+# KARTOUCHE_TEMPLATE_VERSION: 4
 
 # kartouche:config begin
 KT_NAME=app_name
@@ -12,7 +12,7 @@ KT_APPEND_ONLY=false
 KT_GLYPHS=auto
 # kartouche:config end
 
-# kartouche:code begin v3
+# kartouche:code begin v4
 _kt_glyphs() {
     local set=unicode
     [[ $KT_GLYPHS == ascii || ( $KT_GLYPHS == auto && ( ${TERM:-} == linux || ${TERM:-} == dumb ) ) ]] && set=ascii
@@ -75,8 +75,12 @@ kt_render_end() {
     printf ' %s\n' "$text"
 }
 kt_render_frame() {
+    (( $# >= 5 )) || return 0
     local fd=$1 style=$2 n=$3 total=$4 label=$5; shift 5
     local -a labels=("$@")
+    local decimal='^[1-9][0-9]*$'
+    [[ $n =~ $decimal && $total =~ $decimal && ${#n} -le 15 && ${#total} -le 15 ]] || return 0
+    (( n <= total + 1 )) || return 0
     local i count filled longest dots text sym role bar rest end=false
     _kt_glyphs; label=$(_kt_text "$label")
     (( n > total )) && end=true
