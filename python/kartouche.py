@@ -1,7 +1,7 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 3
+# KARTOUCHE_TEMPLATE_VERSION: 4
 
 # kartouche:config begin
 NAME = "app_name"
@@ -10,9 +10,10 @@ DESCRIPTION = "app_description"
 ACCENT = "33"
 APPEND_ONLY = False
 GLYPHS = "auto"
+PAUSE_SECONDS = 1
 # kartouche:config end
 
-# kartouche:code begin v3
+# kartouche:code begin v4
 import os
 import sys
 import time
@@ -146,21 +147,33 @@ def render_summary(style: str, name: str, version: str, items: list[tuple[str, s
     return "\n".join(lines)
 
 
+def _after_block() -> None:
+    if PAUSE_SECONDS > 0 and sys.stderr.isatty():
+        time.sleep(PAUSE_SECONDS)
+    try: print(file=sys.stderr)
+    except OSError: pass
+
+
+def _print_block(text: str) -> None:
+    if not text:
+        return
+    try:
+        print("\n" + text, file=sys.stderr)
+        sys.stderr.flush()
+    except OSError: pass
+    _after_block()
+
+
 def summary(style: str, items: list[tuple[str, str]]) -> None:
-    text = render_summary(style, NAME, VERSION, items, sys.stderr)
-    if text:
-        try: print(text, file=sys.stderr)
-        except OSError: pass
+    _print_block(render_summary(style, NAME, VERSION, items, sys.stderr))
 
 
 def banner(status: str | None = None) -> None:
-    try: print(render_banner(NAME, VERSION, DESCRIPTION, status, sys.stderr), file=sys.stderr)
-    except OSError: pass
+    _print_block(render_banner(NAME, VERSION, DESCRIPTION, status, sys.stderr))
 
 
 def card() -> None:
-    try: print(render_card(NAME, VERSION, DESCRIPTION, sys.stderr), file=sys.stderr)
-    except OSError: pass
+    _print_block(render_card(NAME, VERSION, DESCRIPTION, sys.stderr))
 
 
 class Steps:
@@ -168,7 +181,7 @@ class Steps:
         self.style, self.labels, self.n, self.finished = style, labels, int(bool(labels)), False
         self.started, self.previous = time.monotonic(), 0
         self.redraw = sys.stderr.isatty() and not APPEND_ONLY
-        self._write(render_title(NAME, VERSION, sys.stderr) + "\n")
+        self._write("\n" + render_title(NAME, VERSION, sys.stderr) + "\n")
         if labels: self._show()
 
     def _write(self, text: str) -> None:
@@ -199,6 +212,7 @@ class Steps:
         self.finished, self.finished_ok = True, True
         text = "done in " + (_text(elapsed) if elapsed is not None else f"{time.monotonic()-self.started:.1f}s")
         self._show(render_end(True, text, sys.stderr))
+        _after_block()
 
     def fail(self, reason: str | None = None) -> None:
         if self.finished: return
@@ -206,6 +220,7 @@ class Steps:
         text = f"failed at {self.n}/{len(self.labels)} {_text(self.labels[self.n-1])}" if self.labels else "failed"
         if reason: text += " · " + _text(reason)
         self._show(render_end(False, text, sys.stderr))
+        _after_block()
 
     def __enter__(self): return self
 

@@ -8,9 +8,9 @@
 1. Read this whole document first.
 2. Build the repo in the phases of section 9, in order.
 3. **This is not a library.** Nothing here is published, versioned for consumers, or imported by other repos. Every file is a template that gets **copied** into another project and edited there.
-4. **No dependencies**, standard library only, in every language.
+4. **No third-party dependencies**, standard library only in Rust, Python and Go. Bash uses Arch Linux's standard `sleep` command (coreutils) only for the optional terminal pause; no extra installation is needed on the reference platform.
 5. **Keep the code short and boring.** The size target is about 150 lines per template file (Rust and Go about 200). This is a **goal, not an acceptance criterion**: a file may exceed it if correctness or the expected output requires, in which case say so in the final report. The hard rules are: no dependencies, one self-contained file per language, the markers of section 5.1, and the expected output. If a feature is not in this document, do not add it.
-6. The file `expected/demo.txt` is the source of truth for how every template must look. All four languages must reproduce it byte for byte when color is off.
+6. The `expected/demo*.txt` files are the source of truth for rendered elements; `expected/flow*.txt` specify print-layer spacing. All four languages must reproduce them byte for byte when color is off.
 7. Reference platform: **Arch Linux**, bash 5.x, and the **current Arch versions** of Python (3.14), Rust and Go. Do not add compatibility code for other platforms or for older language versions; modern syntax and standard-library features are fine.
 8. The repo already exists at **https://github.com/kamilomelo/kartouche** (see section 3.1 for the remote, SSH key and what to commit).
 
@@ -32,7 +32,7 @@ To use it: copy `kartouche.<ext>` into a script, edit the config block at the to
 ## 2. Non-goals
 
 - No package publishing (crates.io, PyPI, Go module proxy), no version tags for consumers.
-- No dependencies, optional or otherwise. No feature flags.
+- No third-party dependencies or feature flags. The only external command used by a Bash template is Arch's standard `sleep` for the terminal pause (section 4.9).
 - No CI matrix, no cross-platform support beyond Arch Linux.
 - No Unicode width handling. The card assumes every character is one column wide; text with wide characters (CJK, emoji) will misalign its right border, and keeping the text single-width is the caller's responsibility. The banner and steps are left-aligned, so they are unaffected. No terminal-width truncation either.
 - No ASCII fallback beyond the single `TERM=linux` / `TERM=dumb` rule in section 4.7. Otherwise UTF-8 terminals are assumed.
@@ -58,13 +58,19 @@ kartouche/
 │   ├── demo.rs
 │   ├── demo.py
 │   ├── demo.go
+│   ├── flow.sh         # live spacing/pause example using the print functions
+│   ├── flow.rs
+│   ├── flow.py
+│   ├── flow.go
 │   ├── steps.sh        # live Steps run: `steps.<ext> STYLE` (used by preview and phase 4 checks)
 │   ├── steps.rs
 │   ├── steps.py
 │   └── steps.go
 ├── expected/
 │   ├── demo.txt        # exact output of every demo with NO_COLOR=1 and a Unicode TERM
-│   └── demo-ascii.txt  # same output with TERM=linux (ASCII glyphs)
+│   ├── demo-ascii.txt  # same output with TERM=linux (ASCII glyphs)
+│   ├── flow.txt        # print-function output to stderr, Unicode, without timing
+│   └── flow-ascii.txt  # the same flow in ASCII
 ├── check.sh           # runs all four demos, diffs against the expected files
 └── preview.sh         # runs the demos with color so I can look at them
 ```
@@ -204,6 +210,7 @@ Replace the last line of the region:
 - Always two spaces between name and version, two spaces before a counter.
 - Newlines in any text field are replaced by a single space.
 - Text is printed literally. Never interpret `%`, `\`, `$` or backslash sequences in user text (Bash: use `printf '%s'`).
+- **Printed blocks only:** `banner`, `card`, `summary` and a complete `Steps` run have one blank line before and one after the block, on both terminals and redirected stderr. For steps, the opening line is printed at `start` and the closing line after `done`, `fail` or Rust `Drop` / Go `Close`; never add blank lines between steps. Adjacent blocks therefore each contribute their own blank line (two between them). Render functions return only the element itself, with no surrounding blank lines.
 
 ### 4.6 Color
 
@@ -281,6 +288,10 @@ Summaries report **completed commands** rather than tracking steps in progress. 
 
 The final line **always** reports all three counts, even when a count is zero. It uses `✗` (red) if any item failed; otherwise `○` (dim) if any was skipped or there are no items; otherwise `✓` (green). The separators `·` follow the glyph set, so they become `.` in ASCII mode. Empty summaries show just the title and `╰─ ○ 0 ok · 0 failed · 0 skipped`. Text follows section 4.5. No new config field is needed; callers own the results and hand them to the summary once. Invalid summary styles or outcomes print nothing.
 
+### 4.9 Optional pause after a printed block
+
+The config constant `PAUSE_SECONDS` (default `1`, in seconds; non-negative fractional values such as `0.5` are allowed) keeps a **completed printed block** visible before another script message can follow it. Set it to `0` to disable the delay. Pause only if **stderr is a terminal**; pipes and logs never wait. `NO_COLOR` and `APPEND_ONLY` do not change the pause decision. Apply it once after `banner`, `card`, `summary`, or a steps end (`done`, `fail`, Rust `Drop`, Go `Close`), after the end line has been written and before the trailing blank line. Never wait at steps start, between steps, on an invalid/empty summary, or in any `render_*` function. The pause emits no text. Bash calls the standard Arch Linux `sleep` command; the other templates use their standard-library timers.
+
 ---
 
 ## 5. Template contract
@@ -293,7 +304,7 @@ Every `kartouche.<ext>` file has exactly this shape:
 <header comment: name, `SPDX-License-Identifier: MIT`, `Copyright (c) 2026 Kamilo Melo`, the repo URL https://github.com/kamilomelo/kartouche, "copy this file into your project", KARTOUCHE_TEMPLATE_VERSION>
 
 <<< CONFIG: edit these (an updater must keep this region) >>>
-NAME, VERSION, DESCRIPTION, ACCENT, APPEND_ONLY, GLYPHS   (and nothing else)
+NAME, VERSION, DESCRIPTION, ACCENT, APPEND_ONLY, GLYPHS, PAUSE_SECONDS   (and nothing else)
 <<< END CONFIG >>>
 
 <<< KARTOUCHE CODE v<N>: do not edit (an updater replaces this region) >>>
@@ -316,7 +327,7 @@ Same names and behavior everywhere, in each language's casing.
 **Two layers.**
 
 - **Render functions** return text and write nothing. They take explicit values (name, version, description, ...) and a **destination stream**, which is used *only* to decide color and glyphs for text meant for that stream (section 5.3). They read `ACCENT` and `GLYPHS` from the config region and `TERM` and `NO_COLOR` from the environment, but never `NAME`, `VERSION` or `DESCRIPTION`. The print functions, `Steps`, the demos and tests are all built on them. Returned text has lines joined by `\n` and **no trailing newline** (Bash prints it followed by one newline, because shell functions return text on stdout).
-- **Print functions** and **`Steps`** read `NAME`, `VERSION`, `DESCRIPTION` (and `ACCENT`, `APPEND_ONLY`, `GLYPHS`) from the config region and always write to **stderr**. A script that needs stdout, or a different name, calls the render functions and writes the text itself.
+- **Print functions** and **`Steps`** read `NAME`, `VERSION`, `DESCRIPTION` (and `ACCENT`, `APPEND_ONLY`, `GLYPHS`, `PAUSE_SECONDS`) from the config region and always write to **stderr**. A script that needs stdout, or a different name, calls the render functions and writes the text itself. Only the print layer adds the blank-line envelope and optional pause (sections 4.5 and 4.9).
 
 | Function | What it does |
 |---|---|
@@ -433,7 +444,7 @@ Rules shared by all languages:
 
 ### 5.4 Per-language notes
 
-- **Bash**: bash 5.x only. Single file meant to be `source`d; sourcing prints nothing and changes no shell options. Public functions are prefixed `kt_`, internals `_kt_`. Config variables are `KT_NAME`, `KT_VERSION`, `KT_DESCRIPTION`, `KT_ACCENT`, `KT_APPEND_ONLY`, `KT_GLYPHS`. Before using `n` or `total` in shell arithmetic, `kt_render_frame` verifies canonical positive decimal integers of at most 15 digits and `1 <= n <= total + 1`; on invalid input it prints nothing and returns 0. This prevents shell arithmetic from interpreting caller-supplied expressions.
+- **Bash**: bash 5.x only. Single file meant to be `source`d; sourcing prints nothing and changes no shell options. Public functions are prefixed `kt_`, internals `_kt_`. Config variables are `KT_NAME`, `KT_VERSION`, `KT_DESCRIPTION`, `KT_ACCENT`, `KT_APPEND_ONLY`, `KT_GLYPHS`, `KT_PAUSE_SECONDS`. The pause uses the standard `sleep` command available on Arch Linux, guarded so a failure never aborts the host under `set -e`. Before using `n` or `total` in shell arithmetic, `kt_render_frame` verifies canonical positive decimal integers of at most 15 digits and `1 <= n <= total + 1`; on invalid input it prints nothing and returns 0. This prevents shell arithmetic from interpreting caller-supplied expressions.
 - **Rust**: usable as `mod kartouche;` or pasted into a single-file script. Config are `const NAME`, `VERSION`, `DESCRIPTION`, `ACCENT: &str`. Use `std::io::IsTerminal`. No `unsafe`, no crates. Public items are `pub`; the file starts with `#![allow(dead_code)]` after the header comment so unused functions do not warn. It defines **no `fn main`**.
 - **Python**: current Arch Python (3.14); modern syntax is fine (`X | None`, `match`, and so on). Stdlib only, type hints. Config are module constants. Terminal check with `sys.stderr.isatty()`.
 - **Go**: current Arch Go; modern features (generics, `slices`, `min`/`max` builtins) are fine. `package main` by default (the header says to change it when pasted into another package). On Linux, check whether the destination file is a terminal using a `TCGETS` ioctl on its file descriptor (standard-library `syscall` and `unsafe` are permitted for this check); a successful ioctl means terminal, and an error means not a terminal. `(*os.File).Stat()` with `os.ModeCharDevice` alone is **not** sufficient: `/dev/null` is a character device but not a terminal. The file defines **no `func main`** so a demo or host program can supply its own. `Steps` is not concurrency-safe and the doc comment says so.
@@ -496,7 +507,7 @@ It prints, with `NO_COLOR=1 TERM=xterm-256color`, exactly `expected/demo.txt`, a
 
 Go note: `go run a.go b.go` requires all files to be in one directory, so the demo is run from a temporary copy; both files are `package main` and only `demo.go` has `func main`.
 
-**Live steps demos.** `demo/steps.<ext> STYLE` (run the same way as above, with the style as the extra argument) creates a `Steps` with the labels `connect fetch build deploy`, sleeps 0.3 s between steps, ends with `done`, and uses the real print path, so everything goes to **stderr**. `preview.sh` and the Phase 4 checks use it.
+**Live print demos.** `demo/steps.<ext> STYLE` (run the same way as above, with the style as the extra argument) creates a `Steps` with the labels `connect fetch build deploy`, sleeps 0.3 s between steps, ends with `done`, and uses the real print path, so everything goes to **stderr**. `demo/flow.<ext>` uses the matching template's print functions for a banner, card and rail summary, with script-flow messages between them; this makes the spacing and the terminal pause visible. When stderr is redirected and `NO_COLOR=1`, every `flow.<ext>` matches `expected/flow.txt` or `expected/flow-ascii.txt` byte for byte. `preview.sh` runs both live demos. The Phase 4 checks use them.
 
 ### 7.2 `expected/demo.txt`
 
@@ -626,10 +637,64 @@ The same output with the ASCII glyphs of section 4.7:
 `- x 1 ok . 1 failed . 1 skipped
 ````
 
+### 7.2c `expected/flow.txt`
+
+The entire stderr output of every `demo/flow.<ext>` with `NO_COLOR=1 TERM=xterm-256color` (and no stdout output):
+
+````text
+Loading configuration...
+
+╭─ ● app_name  v0.1.0
+╰─❯ app_description
+
+Checking inputs...
+
+╭─ app_name ──  v0.1.0 ─╮
+│  app_description      │
+╰───────────────────────╯
+
+Reviewing results...
+
+╭─ ● app_name  v0.1.0
+├─ ✓ connect
+├─ ✗ fetch
+├─ ○ deploy
+╰─ ✗ 1 ok · 1 failed · 1 skipped
+
+Continuing...
+````
+
+### 7.2d `expected/flow-ascii.txt`
+
+The same flow with `NO_COLOR=1 TERM=linux`:
+
+````text
+Loading configuration...
+
+,- * app_name  v0.1.0
+`-> app_description
+
+Checking inputs...
+
+,- app_name --  v0.1.0 -.
+|  app_description      |
+`-----------------------'
+
+Reviewing results...
+
+,- * app_name  v0.1.0
+|- + connect
+|- x fetch
+|- o deploy
+`- x 1 ok . 1 failed . 1 skipped
+
+Continuing...
+````
+
 ### 7.3 Scripts
 
-- `check.sh`: for each language in `bash rust python go`, run the demo command of 7.1 twice, with `NO_COLOR=1 TERM=xterm-256color` against `expected/demo.txt` and with `NO_COLOR=1 TERM=linux` against `expected/demo-ascii.txt`; diff the output; print one line per language (`bash ok`, `rust FAIL`, and so on); exit non-zero on any difference. Uses `bash`, `rustc`, `python3`, `go` from the Arch packages, and cleans up its temporary directories.
-- `preview.sh [lang]`: run the demos of 7.1 with color on (output to the terminal, no `NO_COLOR`) so the look can be inspected, then run `steps.<ext>` for every style so the redraw can be seen. With no argument it runs all four languages, with a header per language.
+- `check.sh`: for each language in `bash rust python go`, run the render demo of 7.1 and the matching `flow.<ext>` twice, with `NO_COLOR=1 TERM=xterm-256color` against `expected/demo.txt` and `expected/flow.txt`, and with `NO_COLOR=1 TERM=linux` against their ASCII counterparts. Compare demo stdout and flow stderr, assert flow stdout is empty; print one line per language (`bash ok`, `rust FAIL`, and so on); exit non-zero on any difference. No pause occurs on redirected stderr. Uses `bash`, `rustc`, `python3`, `go` from the Arch packages, and cleans up its temporary directories.
+- `preview.sh [lang]`: run the render demos of 7.1 with color on (output to the terminal, no `NO_COLOR`), then `flow.<ext>` to show the blank lines and terminal pauses, then `steps.<ext>` for every style with flow messages before and after so the redraw and final pause can be seen. With no argument it runs all four languages, with a header per language. Because each completed block pauses, the full preview takes longer; use `[lang]` for a quick look.
 
 `check.sh` is for building this repo and for sanity after edits. It is **not** run by anything automatically.
 
@@ -670,7 +735,7 @@ SOFTWARE.
 **Phase 1: design and expected output**
 - [ ] `DESIGN.md` (copy of section 4), `LICENSE`, `README.md` skeleton (with the repo link and badge-free one-line description from 3.1).
 - [ ] Git remote set to `git@github.com:kamilomelo/kartouche.git` and the phase commit made (no push).
-- [ ] `expected/demo.txt` and `expected/demo-ascii.txt` exactly as in sections 7.2 and 7.2b.
+- [ ] `expected/demo.txt` and `expected/demo-ascii.txt` exactly as in sections 7.2 and 7.2b; the print-layer `expected/flow*.txt` in sections 7.2c and 7.2d apply once implemented.
 
 **Phase 2: Bash and Python templates**
 - [ ] `bash/kartouche.sh` and `python/kartouche.py` with the config/code markers (5.1), the render functions, `banner`, `card`, `Steps` and end states, following 5.2 and 5.5.
@@ -688,6 +753,7 @@ Use `script -qec '<command>' /dev/null` (util-linux, on Arch by default) or Pyth
 - [ ] **Redraw:** under a pseudo-terminal with `TERM=xterm-256color`, `<steps> rail` output contains cursor-up (`\x1b[<k>A`, k ≥ 1) and line-clear (`\x1b[2K`) sequences and ends with the end line.
 - [ ] **Linux console glyphs:** under a pseudo-terminal with `TERM=linux`, `<steps> dots` output has only 7-bit ASCII bytes once escape sequences are stripped (for example `LC_ALL=C grep -qP '[^\x00-\x7F]'` finds nothing).
 - [ ] **Append-only config:** under a pseudo-terminal with `TERM=xterm-256color` and `APPEND_ONLY` set to true in a **temporary copy** of each template's config (do not change the repo templates), `<steps> rail` emits one step line per step and an end line, with no cursor-up (`\x1b[<k>A`), line-clear (`\x1b[2K`) or standalone carriage-return (`\r`) sequences. Disable the pseudo-terminal's `ONLCR` translation for this check, or ignore only its automatic `\r\n` newline conversions. Run the matching steps demo against that temporary template copy; this verifies the config switch independently of the non-terminal fallback.
+- [ ] **Spacing and pause:** `flow.<ext>` and `steps.<ext>` emit a blank line before and after each printed block. On a pseudo-terminal, a completed block stays visible for at least one second before the trailing blank line and the next flow message; with a temporary config copy setting `PAUSE_SECONDS=0`, it does not wait. When stderr is redirected, it also does not wait (regardless of the configured pause). Render demos still match the unchanged expected files exactly.
 - [ ] **Bash strict mode:** a script with `set -euo pipefail` that sources `bash/kartouche.sh` and calls every public function exits 0.
 - [ ] **Single-file copy:** copying one template file alone into an empty directory and calling the banner works with no other files.
 
@@ -700,9 +766,9 @@ Use `script -qec '<command>' /dev/null` (util-linux, on Arch by default) or Pyth
 **Phase 5: docs and updater**
 - [ ] `UPDATING.md` as in section 6.
 - [ ] `README.md`: text-block screenshots of banner, card, all step styles and both summary styles, four quickstarts of under 10 lines each, summary usage examples, the accent table, a one-line note that the card assumes single-width characters, and the "how to update a script" recipe.
-- [ ] `check.sh` and `preview.sh` working (7.3).
+- [ ] `check.sh` and `preview.sh` working (7.3), including the spaced flow examples.
 
-**Done means:** `check.sh` prints four `ok` lines (each covering both the Unicode and the `TERM=linux` run), every checkbox of phases 1 to 5 is ticked (the manual follow-up in phase 4 is excluded), and the final report lists the manual follow-ups as not performed. The line-count targets of section 0 are not part of this definition.
+**Done means:** `check.sh` prints four `ok` lines (each covering both the Unicode and the `TERM=linux` run of both demos), every checkbox of phases 1 to 5 is ticked (the manual follow-up in phase 4 is excluded), and the final report lists the manual follow-ups as not performed. The line-count targets of section 0 are not part of this definition.
 
 ---
 

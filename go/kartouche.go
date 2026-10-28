@@ -1,7 +1,7 @@
 // kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Kamilo Melo
-// KARTOUCHE_TEMPLATE_VERSION: 4
+// KARTOUCHE_TEMPLATE_VERSION: 5
 // Change package main to match your package when copying this file elsewhere.
 package main
 
@@ -22,10 +22,11 @@ const DESCRIPTION = "app_description"
 const ACCENT = "33"
 const APPEND_ONLY = false
 const GLYPHS = "auto"
+const PAUSE_SECONDS = 1.0
 
 // kartouche:config end
 
-// kartouche:code begin v4
+// kartouche:code begin v5
 type Style int
 
 const (
@@ -251,15 +252,26 @@ func RenderSummary(style Style, name, version string, items []SummaryItem, f *os
 }
 
 func Summary(style Style, items []SummaryItem) {
-	if text := RenderSummary(style, NAME, VERSION, items, os.Stderr); text != "" {
-		_, _ = fmt.Fprintln(os.Stderr, text)
-	}
+	printBlock(RenderSummary(style, NAME, VERSION, items, os.Stderr))
 }
 
-func Banner(status string) {
-	_, _ = fmt.Fprintln(os.Stderr, RenderBanner(NAME, VERSION, DESCRIPTION, status, os.Stderr))
+func afterBlock() {
+	if PAUSE_SECONDS > 0 && terminal(os.Stderr) {
+		time.Sleep(time.Duration(PAUSE_SECONDS * float64(time.Second)))
+	}
+	_, _ = fmt.Fprintln(os.Stderr)
 }
-func Card() { _, _ = fmt.Fprintln(os.Stderr, RenderCard(NAME, VERSION, DESCRIPTION, os.Stderr)) }
+func printBlock(text string) {
+	if text == "" {
+		return
+	}
+	_, _ = fmt.Fprintln(os.Stderr, "\n"+text)
+	afterBlock()
+}
+func Banner(status string) {
+	printBlock(RenderBanner(NAME, VERSION, DESCRIPTION, status, os.Stderr))
+}
+func Card() { printBlock(RenderCard(NAME, VERSION, DESCRIPTION, os.Stderr)) }
 
 // Steps is not concurrency-safe.
 type Steps struct {
@@ -272,7 +284,7 @@ type Steps struct {
 
 func NewSteps(style Style, labels ...string) *Steps {
 	s := &Steps{style: style, labels: append([]string(nil), labels...), started: time.Now(), redraw: terminal(os.Stderr) && !APPEND_ONLY}
-	_, _ = fmt.Fprintln(os.Stderr, RenderTitle(NAME, VERSION, os.Stderr))
+	_, _ = fmt.Fprintln(os.Stderr, "\n"+RenderTitle(NAME, VERSION, os.Stderr))
 	if len(labels) > 0 {
 		s.n = 1
 		s.show("", false)
@@ -322,6 +334,7 @@ func (s *Steps) Done(elapsed string) {
 		elapsed = fmt.Sprintf("%.1fs", time.Since(s.started).Seconds())
 	}
 	s.show(RenderEnd(true, "done in "+clean(elapsed), os.Stderr), true)
+	afterBlock()
 }
 func (s *Steps) Fail(reason string) {
 	if s.finished {
@@ -336,6 +349,7 @@ func (s *Steps) Fail(reason string) {
 		text += " · " + clean(reason)
 	}
 	s.show(RenderEnd(false, text, os.Stderr), false)
+	afterBlock()
 }
 func (s *Steps) Close() {
 	if s.finished {
@@ -347,6 +361,7 @@ func (s *Steps) Close() {
 		text = fmt.Sprintf("interrupted at %d/%d %s", s.n, len(s.labels), clean(s.labels[s.n-1]))
 	}
 	s.show(RenderEnd(false, text, os.Stderr), false)
+	afterBlock()
 }
 
 // kartouche:code end

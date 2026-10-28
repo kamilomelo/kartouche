@@ -1,7 +1,7 @@
 # kartouche — copy this file into your project; https://github.com/kamilomelo/kartouche
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Kamilo Melo
-# KARTOUCHE_TEMPLATE_VERSION: 5
+# KARTOUCHE_TEMPLATE_VERSION: 6
 
 # kartouche:config begin
 KT_NAME=app_name
@@ -10,9 +10,10 @@ KT_DESCRIPTION=app_description
 KT_ACCENT=33
 KT_APPEND_ONLY=false
 KT_GLYPHS=auto
+KT_PAUSE_SECONDS=1
 # kartouche:config end
 
-# kartouche:code begin v5
+# kartouche:code begin v6
 _kt_glyphs() {
     local set=unicode
     [[ $KT_GLYPHS == ascii || ( $KT_GLYPHS == auto && ( ${TERM:-} == linux || ${TERM:-} == dumb ) ) ]] && set=ascii
@@ -176,9 +177,29 @@ kt_render_summary() {
     return 0
 }
 
-kt_banner() { kt_render_banner 2 "$KT_NAME" "$KT_VERSION" "$KT_DESCRIPTION" "${1:-}" >&2 || :; }
-kt_card() { kt_render_card 2 "$KT_NAME" "$KT_VERSION" "$KT_DESCRIPTION" >&2 || :; }
-kt_summary() { local style=${1:-}; (( $# )) && shift || :; kt_render_summary 2 "$style" "$KT_NAME" "$KT_VERSION" "$@" >&2 || :; }
+_kt_pause() {
+    if [[ -t 2 && $KT_PAUSE_SECONDS != 0 ]]; then sleep "$KT_PAUSE_SECONDS" || :; fi
+    return 0
+}
+_kt_after_block() { _kt_pause; printf '\n' >&2 || :; return 0; }
+_kt_print_block() {
+    [[ -n $1 ]] || return 0
+    printf '\n%s\n' "$1" >&2 || :
+    _kt_after_block
+}
+kt_banner() {
+    local text; text=$(kt_render_banner 2 "$KT_NAME" "$KT_VERSION" "$KT_DESCRIPTION" "${1:-}") || :
+    _kt_print_block "$text"
+}
+kt_card() {
+    local text; text=$(kt_render_card 2 "$KT_NAME" "$KT_VERSION" "$KT_DESCRIPTION") || :
+    _kt_print_block "$text"
+}
+kt_summary() {
+    local style=${1:-} text; (( $# )) && shift || :
+    text=$(kt_render_summary 2 "$style" "$KT_NAME" "$KT_VERSION" "$@") || :
+    _kt_print_block "$text"
+}
 _kt_print_region() {
     local text=$1 line
     local -a lines=()
@@ -211,6 +232,7 @@ kt_steps_start() {
     _kt_style_name=${1:-inline}; shift || :; _kt_labels=("$@"); _kt_total=${#_kt_labels[@]}
     _kt_n=0 _kt_prev=0 _kt_finished=false _kt_started=${EPOCHREALTIME:-0}
     _kt_redraw=false; [[ -t 2 && $KT_APPEND_ONLY != true ]] && _kt_redraw=true
+    printf '\n' >&2 || :
     kt_render_title 2 "$KT_NAME" "$KT_VERSION" >&2 || :
     if (( _kt_total )); then _kt_n=1; _kt_show; fi
     return 0
@@ -231,6 +253,7 @@ kt_steps_done() {
         printf -v elapsed '%d.%ds' "$((tenths/10))" "$((tenths%10))"
     fi
     _kt_show "$(kt_render_end 2 1 "done in $elapsed")" "$((_kt_total+1))"
+    _kt_after_block
     return 0
 }
 kt_steps_fail() {
@@ -240,6 +263,7 @@ kt_steps_fail() {
     if (( _kt_total )); then text="failed at $_kt_n/$_kt_total $(_kt_text "${_kt_labels[_kt_n-1]}")"; fi
     [[ -n $reason ]] && text+=" · $(_kt_text "$reason")"
     _kt_show "$(kt_render_end 2 0 "$text")"
+    _kt_after_block
     return 0
 }
 # kartouche:code end

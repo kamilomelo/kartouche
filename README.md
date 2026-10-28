@@ -4,7 +4,7 @@ Copy-paste terminal banners, cards, step counters and command summaries for Bash
 
 https://github.com/kamilomelo/kartouche
 
-Copy **one** `kartouche.<ext>` into your project, edit its config block, then use its print functions. Nothing is installed or linked; the copy belongs to your script. All templates use only their language's standard library. Decoration goes to stderr; the render functions return strings for callers that want stdout. Terminal output redraws steps, while logs and pipes use append-only lines.
+Copy **one** `kartouche.<ext>` into your project, edit its config block, then use its print functions. Nothing is installed or linked; the copy belongs to your script. The templates need no third-party dependencies; Bash uses Arch's standard `sleep` command for the optional pause. Decoration goes to stderr; the render functions return strings for callers that want stdout. Terminal output redraws steps, while logs and pipes use append-only lines.
 
 See [DESIGN.md](DESIGN.md) for the exact look and [SPEC.md](SPEC.md) for the full contract.
 
@@ -153,6 +153,14 @@ Summary(Rail, []SummaryItem{{"connect", OkOutcome}, {"fetch", FailedOutcome}, {"
 
 To build output for stdout instead, use `kt_render_summary`, `render_summary`, or `RenderSummary` in the matching language and supply stdout as the destination. Only `rail` and `log` are summary styles; the existing progress styles are unchanged.
 
+## Spacing and pause
+
+The **print functions** add one blank line before and after each complete banner, card, summary or steps run, so your script does not have to. A steps run gets its opening blank line at `start` and its closing blank line after `done` or `fail`; there are no blank lines between steps. Adjacent kartouche blocks each add their own blank line. Remove manually added blank lines around kartouche calls when updating an older script, or those gaps will double. The pure `render_*` functions add no surrounding spacing, so their exact output remains under your control.
+
+On a terminal, a completed block stays visible for **one second** before kartouche writes the closing blank line and your script continues. This happens only once per block, not once per step. Edit `PAUSE_SECONDS` in a copied template (`KT_PAUSE_SECONDS` in Bash) to change the wait; fractional seconds such as `0.5` work, and `0` disables it. When stderr is piped or redirected, there is **no delay**, though the blank lines remain. The pause works with `NO_COLOR=1` and `APPEND_ONLY=true` too.
+
+Run `./preview.sh bash` to watch the flow example and live steps in your terminal. If your script's flow messages need to stay ordered with kartouche output, write those messages to stderr as well (`>&2` in Bash).
+
 ## Accent and console
 
 Edit `ACCENT` (or `KT_ACCENT` in Bash) to one raw SGR parameter string. `✓` stays green (`32`) and `✗` stays red regardless of the accent:
@@ -170,7 +178,7 @@ Avoid `30` (black) and `90` (gray): they disappear on some terminal themes. Colo
 
 ## Preview and checks
 
-`./check.sh` compares all four demos (including both summary styles) byte-for-byte with both expected files. `./preview.sh [bash|rust|python|go]` shows the look and runs each live step style in your terminal. These scripts require Bash, rustc, Python 3 and Go; they are not run automatically.
+`./check.sh` compares the render and print-flow demos from all four languages against their Unicode and ASCII expected files. `./preview.sh [bash|rust|python|go]` shows a live spacing/pause example and runs each step style in your terminal. The full preview takes longer because each block pauses; use a language argument for a quicker look. These scripts require Bash, rustc, Python 3 and Go; they are not run automatically.
 
 To update a script, tell your agent: **update the kartouche in this script from `<path or URL>`, following [UPDATING.md](UPDATING.md)**. The latest raw templates are at `https://raw.githubusercontent.com/kamilomelo/kartouche/main/<language>/kartouche.<ext>`.
 

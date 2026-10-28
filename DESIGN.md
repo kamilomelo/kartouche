@@ -103,6 +103,7 @@ Replace the last line of the region:
 - Always two spaces between name and version, two spaces before a counter.
 - Newlines in any text field are replaced by a single space.
 - Text is printed literally. Never interpret `%`, `\`, `$` or backslash sequences in user text (Bash: use `printf '%s'`).
+- **Printed blocks only:** `banner`, `card`, `summary` and a complete `Steps` run have one blank line before and one after the block, on both terminals and redirected stderr. For steps, the opening line is printed at `start` and the closing line after `done`, `fail` or Rust `Drop` / Go `Close`; never add blank lines between steps. Adjacent blocks therefore each contribute their own blank line (two between them). Render functions return only the element itself, with no surrounding blank lines.
 
 ### 4.6 Color
 
@@ -179,3 +180,7 @@ Summaries report **completed commands** rather than tracking steps in progress. 
 ```
 
 The final line **always** reports all three counts, even when a count is zero. It uses `✗` (red) if any item failed; otherwise `○` (dim) if any was skipped or there are no items; otherwise `✓` (green). The separators `·` follow the glyph set, so they become `.` in ASCII mode. Empty summaries show just the title and `╰─ ○ 0 ok · 0 failed · 0 skipped`. Text follows section 4.5. No new config field is needed; callers own the results and hand them to the summary once. Invalid summary styles or outcomes print nothing.
+
+### 4.9 Optional pause after a printed block
+
+The config constant `PAUSE_SECONDS` (default `1`, in seconds; non-negative fractional values such as `0.5` are allowed) keeps a **completed printed block** visible before another script message can follow it. Set it to `0` to disable the delay. Pause only if **stderr is a terminal**; pipes and logs never wait. `NO_COLOR` and `APPEND_ONLY` do not change the pause decision. Apply it once after `banner`, `card`, `summary`, or a steps end (`done`, `fail`, Rust `Drop`, Go `Close`), after the end line has been written and before the trailing blank line. Never wait at steps start, between steps, on an invalid/empty summary, or in any `render_*` function. The pause emits no text. Bash calls the standard Arch Linux `sleep` command; the other templates use their standard-library timers.

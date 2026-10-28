@@ -1,0 +1,20 @@
+Loading configuration...
+
+,- * app_name  v0.1.0
+`-> app_description
+
+Checking inputs...
+
+,- app_name --  v0.1.0 -.
+|  app_description      |
+`-----------------------'
+
+Reviewing results...
+
+,- * app_name  v0.1.0
+|- + connect
+|- x fetch
+|- o deploy
+`- x 1 ok . 1 failed . 1 skipped
+
+Continuing...
