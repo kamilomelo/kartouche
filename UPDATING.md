@@ -10,4 +10,4 @@ For a coding agent updating a host script or repository:
 6. If an existing host call uses a removed or renamed function, identify and fix every affected call site. If the new template needs additional config fields, add their defaults to the host's config and tell the owner. Don't overwrite customized values.
 7. Run the host's tests (or at least a dry run), show the diff, and report any remaining issues.
 
-The copy belongs to the host project; do not turn it into a shared dependency.
+The copy belongs to the host project; do not turn it into a shared dependency. These instructions apply to copied templates. A Bash script that intentionally sources a shared local checkout follows updates to that checkout instead.

@@ -4,9 +4,34 @@ Copy-paste terminal banners, cards, step counters and command summaries for Bash
 
 https://github.com/kamilomelo/kartouche
 
-Copy **one** `kartouche.<ext>` into your project, edit its config block, then use its print functions. Nothing is installed or linked; the copy belongs to your script. The templates need no third-party dependencies; Bash uses Arch's standard `sleep` command for the optional pause. Decoration goes to stderr; the render functions return strings for callers that want stdout. Terminal output redraws steps, while logs and pipes use append-only lines.
+Copy **one** `kartouche.<ext>` into your project, edit its config block, then use its print functions. No installer or shared runtime is required; the copy belongs to your script. The templates need no third-party dependencies; Bash uses Arch's standard `sleep` command for the optional pause. Decoration goes to stderr; the render functions return strings for callers that want stdout. Terminal output redraws steps, while logs and pipes use append-only lines.
 
 See [DESIGN.md](DESIGN.md) for the exact look and [SPEC.md](SPEC.md) for the full contract.
+
+## Get a template (opt-in)
+
+In your project, run **only the command for the language you need**. Each command downloads one file; it does not install kartouche or change other projects. `-o` replaces an existing file, so check before overwriting a copy you have customized.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kamilomelo/kartouche/main/bash/kartouche.sh -o kartouche.sh
+curl -fsSL https://raw.githubusercontent.com/kamilomelo/kartouche/main/rust/kartouche.rs -o kartouche.rs
+curl -fsSL https://raw.githubusercontent.com/kamilomelo/kartouche/main/python/kartouche.py -o kartouche.py
+curl -fsSL https://raw.githubusercontent.com/kamilomelo/kartouche/main/go/kartouche.go -o kartouche.go
+```
+
+The downloaded file is **your project's copy**: edit its config and keep it with that project. For reproducible downloads, replace `main` in the URL with a commit hash. Do not fetch and execute a template at runtime or pipe a download directly into a shell; projects work offline after the copy is in place.
+
+**Optional Bash-only alternative:** If your scripts deliberately share one local kartouche checkout, source that file and set app-specific values *after* sourcing it (the template sets defaults when loaded):
+
+```bash
+source "/path/to/your/kartouche/bash/kartouche.sh"
+KT_NAME="my_script"
+KT_VERSION="1.0"
+KT_DESCRIPTION="What my script does"
+kt_banner
+```
+
+That path must exist wherever the script runs, and updates to the shared file affect every script sourcing it. It is a choice for your own setup, **not** a requirement for other projects or languages.
 
 ## The look
 

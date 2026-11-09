@@ -7,7 +7,7 @@
 
 1. Read this whole document first.
 2. Build the repo in the phases of section 9, in order.
-3. **This is not a library.** Nothing here is published, versioned for consumers, or imported by other repos. Every file is a template that gets **copied** into another project and edited there.
+3. **This is not a library.** Nothing here is published or versioned for consumers. The default is to copy a template into another project and edit it there. An optional Bash-only local `source` workflow is documented for people who deliberately want to share their own checkout; no project is required to use it.
 4. **No third-party dependencies**, standard library only in Rust, Python and Go. Bash uses Arch Linux's standard `sleep` command (coreutils) only for the optional terminal pause; no extra installation is needed on the reference platform.
 5. **Keep the code short and boring.** The size target is about 150 lines per template file (Rust and Go about 200). This is a **goal, not an acceptance criterion**: a file may exceed it if correctness or the expected output requires, in which case say so in the final report. The hard rules are: no dependencies, one self-contained file per language, the markers of section 5.1, and the expected output. If a feature is not in this document, do not add it.
 6. The `expected/demo*.txt` files are the source of truth for rendered elements; `expected/flow*.txt` specify print-layer spacing. All four languages must reproduce them byte for byte when color is off.
@@ -20,11 +20,11 @@
 
 I write many small CLI scripts in Bash, Rust, Python and Go. I want them all to look like one family: the same banner, the same card, the same step counter. This repo is the **design system** for that: a written look (`DESIGN.md` content is section 4) plus one small template file per language that implements it.
 
-To use it: copy `kartouche.<ext>` into a script, edit the config block at the top, call the functions. The copy belongs to that script. If I later improve kartouche, I ask my coding agent to pull the new template into the other scripts (section 6).
+To use it: copy `kartouche.<ext>` into a script (or download that one file with `curl`), edit the config block at the top, call the functions. The copy belongs to that script. If I later improve kartouche, I ask my coding agent to pull the new template into the other scripts (section 6). Bash scripts can optionally source one shared local checkout if their owner accepts that path and its updates as a dependency; this is not the default.
 
 ### Principles
 
-- **Copy, then own.** No linking between repos, no install step, no version management.
+- **Copy, then own by default.** Downloads are opt-in and happen once, not at runtime. No installer, automatic linking between repos, or version management. Optional local Bash sourcing is the caller's choice, not a requirement.
 - **Update by agent.** Files are structured so an agent can replace the shared code and keep my edits (section 5.1).
 - **One configurable accent and green success.** The accent defaults to yellow; `✓` is always green. Everything else follows the terminal theme except red failures (section 4.6).
 - **Safe in pipes and logs.** Never emit escape codes when output is not a terminal.
@@ -765,7 +765,7 @@ Use `script -qec '<command>' /dev/null` (util-linux, on Arch by default) or Pyth
 
 **Phase 5: docs and updater**
 - [ ] `UPDATING.md` as in section 6.
-- [ ] `README.md`: text-block screenshots of banner, card, all step styles and both summary styles, four quickstarts of under 10 lines each, summary usage examples, the accent table, a one-line note that the card assumes single-width characters, and the "how to update a script" recipe.
+- [ ] `README.md`: text-block screenshots of banner, card, all step styles and both summary styles, four quickstarts of under 10 lines each, opt-in one-file `curl` downloads and optional shared local Bash sourcing, summary usage examples, the accent table, a one-line note that the card assumes single-width characters, and the "how to update a script" recipe.
 - [ ] `check.sh` and `preview.sh` working (7.3), including the spaced flow examples.
 
 **Done means:** `check.sh` prints four `ok` lines (each covering both the Unicode and the `TERM=linux` run of both demos), every checkbox of phases 1 to 5 is ticked (the manual follow-up in phase 4 is excluded), and the final report lists the manual follow-ups as not performed. The line-count targets of section 0 are not part of this definition.
